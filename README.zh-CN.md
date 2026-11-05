@@ -72,6 +72,14 @@ curl -s "$DSH_WEB_URL/watchkeeper/health" | python3 -m json.tool
 ln -s "$DSH_PROFILE_DIR/node_modules/dsh-watchkeeper/skills/dsh-watchkeeper" "$DSH_HOME/skills/dsh-watchkeeper"
 ```
 
+只想把技能装进其他 Agent（Claude Code、Codex 等），可以走 [skills.sh](https://skills.sh)（Vercel 的 `skills` 命令行，要求 Node 22.20 及以上）：
+
+```bash
+npx skills add Maravetech/dsh-watchkeeper --skill dsh-watchkeeper -g
+```
+
+技能只负责讲解插件怎么用；DSH 里没装上面的插件，它什么也做不了。
+
 升级与卸载的完整步骤见 [docs/install.md](docs/install.md)。
 
 ## 文档

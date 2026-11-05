@@ -72,6 +72,14 @@ If `DSH_WEB_URL` is not set, use the port from the app's URL, for example `http:
 ln -s "$DSH_PROFILE_DIR/node_modules/dsh-watchkeeper/skills/dsh-watchkeeper" "$DSH_HOME/skills/dsh-watchkeeper"
 ```
 
+To install only the skill into other agents (Claude Code, Codex and others) through [skills.sh](https://skills.sh) (Vercel `skills` CLI, Node 22.20+):
+
+```bash
+npx skills add Maravetech/dsh-watchkeeper --skill dsh-watchkeeper -g
+```
+
+The skill only explains the plugin; it does nothing unless the plugin above is installed in DSH.
+
 Full instructions, including upgrades and uninstall: [docs/install.md](docs/install.md).
 
 ## Documentation
