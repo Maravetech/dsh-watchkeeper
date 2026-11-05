@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.1.1 — alpha
+
+Security:
+
+- HTTP routes no longer reflect any `Origin` in CORS headers. Before this fix, a web page on any origin could call the routes from the user's browser, including `POST /watchkeeper/watch/prompt`, which sends text into a session. Browser requests are now allowed only from the DSH web UI's own origin and from `WATCHKEEPER_ALLOWED_ORIGINS`; others get 403. Upgrade from 0.1.0.
+- Request bodies on the watch routes are capped at 256 KB.
+
+Install:
+
+- Install with `dsh plugin --profile <profile> add github:Maravetech/dsh-watchkeeper#v0.1.1`. The plugin registers itself as a profile bundle; no `cordis.patch.yml` edit or symlink is needed.
+- The skill link now points into the installed package.
+
+Other:
+
+- Removed references to the authors' internal documents from code comments.
+- 36 tests.
+
 ## 0.1.0 — alpha
 
 First public release.

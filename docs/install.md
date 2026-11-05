@@ -2,7 +2,7 @@
 
 Two installs: the plugin and the skill. Do both. The plugin makes DSH number sessions and collect decision cards. The skill tells an agent how to use them.
 
-> Alpha (v0.1). The package is not on npm yet. Install from a local clone.
+> Alpha (v0.1). The package is not on npm yet. Install from GitHub with `dsh plugin add`.
 
 ## Before you start
 
@@ -16,41 +16,26 @@ Outside a DSH session, replace them with your real paths.
 
 ## Part 1 — Install the plugin
 
-### Step 1. Clone the repository
+### Step 1. Add the plugin to the profile
+
+```bash
+dsh plugin --profile <your-profile> add github:Maravetech/dsh-watchkeeper#v0.1.1
+```
+
+`dsh plugin` forwards the arguments to pnpm in the profile directory. It installs the package and adds `dsh-watchkeeper` to the profile's bundle list (`dsh.profile.bundles` in the profile's `package.json`). The plugin ships its own loader patch, so you do not edit `cordis.patch.yml`.
+
+To develop against a local clone, add it by path instead:
 
 ```bash
 git clone https://github.com/Maravetech/dsh-watchkeeper.git
-cd dsh-watchkeeper
+dsh plugin --profile <your-profile> add "file:$PWD/dsh-watchkeeper"
 ```
 
-Keep the clone where it is. The next step links to it; moving it later breaks the link.
-
-### Step 2. Link the package into the profile
-
-```bash
-mkdir -p "$DSH_HOME/profiles/node_modules"
-ln -s "$PWD" "$DSH_HOME/profiles/node_modules/dsh-watchkeeper"
-```
-
-`$DSH_HOME/profiles/node_modules` is the shared module root for all profiles. If the link already exists, remove it first: `rm "$DSH_HOME/profiles/node_modules/dsh-watchkeeper"`.
-
-### Step 3. Add the loader line
-
-Open `$DSH_PROFILE_DIR/cordis.patch.yml` and add:
-
-```yaml
-- insert:
-    - id: dsh-watchkeeper
-      name: 'dsh-watchkeeper'
-```
-
-If the file already has an `- insert:` block, add the two lines under it. Keep the YAML indentation exactly as shown.
-
-### Step 4. Restart DSH
+### Step 2. Restart DSH
 
 Quit the app completely and start it again. The host half of a plugin loads once at app start; a page reload is not enough.
 
-### Step 5. Verify
+### Step 3. Verify
 
 ```bash
 curl -s "$DSH_WEB_URL/watchkeeper/health" | python3 -m json.tool
@@ -60,13 +45,15 @@ A working install returns JSON with `"ok": true` and a `features` array that inc
 
 Also check the session list. Each session row should show a number at its start.
 
-If the endpoint returns 404, the route was not mounted. Check the loader line indentation and restart again.
+If the endpoint returns 404, the route was not mounted. Check that `dsh-watchkeeper` is in the profile's bundle list and restart again.
+
+If a browser page on another origin calls the endpoints, it gets 403. Only the DSH web UI itself, and origins listed in `WATCHKEEPER_ALLOWED_ORIGINS`, may call them from a browser. See [configuration.md](configuration.md).
 
 ## Part 2 — Install the skill
 
 ```bash
 mkdir -p "$DSH_HOME/skills"
-ln -s "$PWD/skills/dsh-watchkeeper" "$DSH_HOME/skills/dsh-watchkeeper"
+ln -s "$DSH_PROFILE_DIR/node_modules/dsh-watchkeeper/skills/dsh-watchkeeper" "$DSH_HOME/skills/dsh-watchkeeper"
 ```
 
 Verify the link points at a real file:
@@ -79,29 +66,22 @@ Restart DSH or reload the agent session so the skill list refreshes.
 
 ## Upgrade
 
-```bash
-cd "$(readlink "$DSH_HOME/profiles/node_modules/dsh-watchkeeper")"
-git pull
-```
-
-Restart DSH. If the clone path changed, remove the old symlinks and create them again:
+Add the new tag; pnpm replaces the old version:
 
 ```bash
-rm "$DSH_HOME/profiles/node_modules/dsh-watchkeeper"
-rm "$DSH_HOME/skills/dsh-watchkeeper"
+dsh plugin --profile <your-profile> add github:Maravetech/dsh-watchkeeper#<new-tag>
 ```
+
+Restart DSH.
 
 ## Uninstall
 
-1. Remove the loader line from `$DSH_PROFILE_DIR/cordis.patch.yml`.
-2. Remove the links:
-
 ```bash
-rm "$DSH_HOME/profiles/node_modules/dsh-watchkeeper"
+dsh plugin --profile <your-profile> remove dsh-watchkeeper
 rm "$DSH_HOME/skills/dsh-watchkeeper"
 ```
 
-3. Restart DSH.
+Restart DSH.
 
 Removing the plugin does not delete your data. Pending answers and the session-number ledger stay in `$WATCHKEEPER_HOME` (default `~/.dsh-watchkeeper`). Delete that directory only if you want to drop them:
 

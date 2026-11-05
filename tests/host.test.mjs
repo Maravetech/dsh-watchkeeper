@@ -47,7 +47,7 @@ function fakeRes() {
 function fakeReq(method, url, payload) {
   const listeners = new Map()
   return {
-    method, url, headers: { origin: 'http://127.0.0.1:3080' },
+    method, url, headers: { origin: 'http://127.0.0.1:3080', host: '127.0.0.1:3080' },
     on(name, fn) { listeners.set(name, fn); return this },
     destroy() {},
     async fire() { if (payload !== undefined) listeners.get('data')?.(JSON.stringify(payload)); listeners.get('end')?.() },

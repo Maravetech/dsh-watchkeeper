@@ -26,3 +26,5 @@ Out of scope:
 ## Safe defaults
 
 The plugin ships with no judge and no reply provider. Nothing is answered automatically until an operator configures a judge command.
+
+The HTTP routes accept browser requests only from the DSH web UI's own origin, plus origins listed in `WATCHKEEPER_ALLOWED_ORIGINS`. A page on any other origin gets 403, so it cannot send text into a session through `/watchkeeper/watch/prompt`. Request bodies are capped at 256 KB.

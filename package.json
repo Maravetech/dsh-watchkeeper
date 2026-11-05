@@ -1,6 +1,6 @@
 {
   "name": "dsh-watchkeeper",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Watch unattended DeepSeek Harness sessions: session numbers, a pending-answer seat for decision cards, and a pluggable judge that answers mid-session questions or hands them to a human.",
   "type": "module",
   "main": "index.js",

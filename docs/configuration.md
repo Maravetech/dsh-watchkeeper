@@ -8,6 +8,7 @@ All configuration is environment variables, plus two optional plugin-config keys
 | --- | --- | --- |
 | `WATCHKEEPER_HOME` | `~/.dsh-watchkeeper` | Root directory for state, the session-number ledger, provider switches and the SQLite database. |
 | `WATCHKEEPER_STATE_DIR` | `$WATCHKEEPER_HOME/state` | Runtime state for the watch engine. Override it to isolate a test run. |
+| `WATCHKEEPER_ALLOWED_ORIGINS` | unset | Extra browser origins allowed to call the plugin's HTTP routes, comma-separated, exact match (for example `http://127.0.0.1:5173`). The DSH web UI's own origin is always allowed; requests without an `Origin` header (curl) are allowed. Every other browser origin gets 403. |
 | `WATCHKEEPER_JUDGE_CMD` | unset | Judge command: an executable path or a shell command. When unset, every decision card goes to a human. |
 | `WATCHKEEPER_CODEX_BIN` | `codex` on `PATH` | Codex CLI binary used by the `codex` reply provider. |
 | `WATCHKEEPER_AGY_BIN` | `agy` on `PATH` | Antigravity CLI binary used by the `agy` reply provider. |

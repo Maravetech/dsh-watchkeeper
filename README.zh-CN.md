@@ -29,24 +29,24 @@ dsh-watchkeeper 是一个替你值守会话的 DSH 插件。它做三件事：
 
 ## 安装
 
-尚未发布到 npm（计划中）。先从本仓库安装。
+用 DSH 自带的插件命令安装：它在 profile 目录里转给 pnpm 执行，并把插件登记为该 profile 的 bundle，不用手改 `cordis.patch.yml`。尚未发布到 npm，从 GitHub 安装。
 
 分两部分：插件（宿主行为）和技能（Agent 指令）。
 
 ### 插件
 
 ```bash
+dsh plugin --profile <你的-profile> add github:Maravetech/dsh-watchkeeper#v0.1.1
+```
+
+要改本地克隆的代码时：
+
+```bash
 git clone https://github.com/Maravetech/dsh-watchkeeper.git
-ln -s "$PWD/dsh-watchkeeper" "$DSH_HOME/profiles/node_modules/dsh-watchkeeper"
+dsh plugin --profile <你的-profile> add "file:$PWD/dsh-watchkeeper"
 ```
 
-在 profile 的 `cordis.patch.yml` 里加：
-
-```yaml
-- insert:
-    - id: dsh-watchkeeper
-      name: 'dsh-watchkeeper'
-```
+卸载：`dsh plugin --profile <你的-profile> remove dsh-watchkeeper`。
 
 完全退出并重启 DSH，然后查健康端点：
 
@@ -59,7 +59,7 @@ curl -s "$DSH_WEB_URL/watchkeeper/health" | python3 -m json.tool
 ### 技能
 
 ```bash
-ln -s "$PWD/dsh-watchkeeper/skills/dsh-watchkeeper" "$DSH_HOME/skills/dsh-watchkeeper"
+ln -s "$DSH_PROFILE_DIR/node_modules/dsh-watchkeeper/skills/dsh-watchkeeper" "$DSH_HOME/skills/dsh-watchkeeper"
 ```
 
 升级与卸载的完整步骤见 [docs/install.md](docs/install.md)。

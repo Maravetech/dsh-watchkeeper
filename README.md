@@ -29,24 +29,24 @@ dsh-watchkeeper is a DSH plugin that watches sessions for you. It does three thi
 
 ## Install
 
-Not on npm yet (planned). Install from this repository.
+Install with DSH's own plugin command. It forwards to pnpm in the profile directory and registers the plugin as a bundle of that profile, so no manual `cordis.patch.yml` edit is needed. Not on npm yet; install from GitHub.
 
 Two parts: the plugin (host behavior) and the skill (agent instructions).
 
 ### Plugin
 
 ```bash
+dsh plugin --profile <your-profile> add github:Maravetech/dsh-watchkeeper#v0.1.1
+```
+
+To work on a local clone instead:
+
+```bash
 git clone https://github.com/Maravetech/dsh-watchkeeper.git
-ln -s "$PWD/dsh-watchkeeper" "$DSH_HOME/profiles/node_modules/dsh-watchkeeper"
+dsh plugin --profile <your-profile> add "file:$PWD/dsh-watchkeeper"
 ```
 
-Add this line to the profile's `cordis.patch.yml`:
-
-```yaml
-- insert:
-    - id: dsh-watchkeeper
-      name: 'dsh-watchkeeper'
-```
+Remove it with `dsh plugin --profile <your-profile> remove dsh-watchkeeper`.
 
 Restart DSH completely, then check the health endpoint:
 
@@ -59,7 +59,7 @@ If `DSH_WEB_URL` is not set, use the port from the app's URL, for example `http:
 ### Skill
 
 ```bash
-ln -s "$PWD/dsh-watchkeeper/skills/dsh-watchkeeper" "$DSH_HOME/skills/dsh-watchkeeper"
+ln -s "$DSH_PROFILE_DIR/node_modules/dsh-watchkeeper/skills/dsh-watchkeeper" "$DSH_HOME/skills/dsh-watchkeeper"
 ```
 
 Full instructions, including upgrades and uninstall: [docs/install.md](docs/install.md).
