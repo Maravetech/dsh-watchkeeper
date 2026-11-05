@@ -36,3 +36,31 @@ test('another localhost port is rejected unless listed in WATCHKEEPER_ALLOWED_OR
 test('a malformed Origin is rejected', () => {
   assert.equal(originAllowed({ headers: { origin: 'null', host: '127.0.0.1:3080' } }), false)
 })
+
+test('DNS rebinding cannot turn an attacker Host and matching Origin into a trusted UI', () => {
+  for (const origin of ['http://evil.example:3080', 'https://evil.example:3080']) {
+    assert.equal(originAllowed({ headers: { host: 'evil.example:3080', origin } }), false)
+  }
+  assert.equal(originAllowed({ headers: { host: 'evil.example:3080' } }), false)
+  assert.equal(originAllowed({ headers: { host: 'evil.example@127.0.0.1:3080', origin: 'dsh://host' } }), false)
+})
+
+test('null and cross-site requests without Origin are rejected even when a localhost Host is present', () => {
+  assert.equal(originAllowed({ headers: { host: '127.0.0.1:3080', origin: 'null' } }), false)
+  assert.equal(originAllowed({ headers: { host: '127.0.0.1:3080', 'sec-fetch-site': 'cross-site' } }), false)
+  assert.equal(originAllowed({ headers: { origin: 'dsh://host' } }), false)
+  process.env.WATCHKEEPER_ALLOWED_ORIGINS = 'null'
+  try { assert.equal(originAllowed({ headers: { host: '127.0.0.1:3080', origin: 'null' } }), false) }
+  finally { delete process.env.WATCHKEEPER_ALLOWED_ORIGINS }
+})
+
+test('DSH desktop schemes and explicit local development origins remain usable', () => {
+  for (const origin of ['dsh://host', 'dsh-app://app', 'http://127.0.0.1:3080']) {
+    assert.equal(originAllowed({ headers: { host: '127.0.0.1:3080', origin } }), true)
+  }
+  assert.equal(originAllowed({ headers: { host: '127.0.0.1:3080', origin: 'dsh://evil' } }), false)
+  process.env.WATCHKEEPER_ALLOWED_HOSTS = 'dev.local:3080'
+  process.env.WATCHKEEPER_ALLOWED_ORIGINS = 'http://dev.local:3080'
+  try { assert.equal(originAllowed({ headers: { host: 'dev.local:3080', origin: 'http://dev.local:3080' } }), true) }
+  finally { delete process.env.WATCHKEEPER_ALLOWED_HOSTS; delete process.env.WATCHKEEPER_ALLOWED_ORIGINS }
+})

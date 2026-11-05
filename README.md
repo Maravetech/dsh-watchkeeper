@@ -102,6 +102,12 @@ Settings are environment variables. The three that matter most:
 
 The full list, the judge contract and the provider commands: [docs/configuration.md](docs/configuration.md).
 
+### HTTP access and task grants
+
+HTTP routes accept the DSH web UI's loopback origin and the desktop shell origins `dsh://host` / `dsh-app://app`. A non-loopback `Host`, `Origin: null`, or a cross-site request without `Origin` is rejected. Use `WATCHKEEPER_ALLOWED_ORIGINS` for a trusted UI on another port; set `WATCHKEEPER_ALLOWED_HOSTS` only when DSH uses a trusted non-loopback host. `/watchkeeper/watch/prompt` cannot use `force` to bypass STOPPED, PAUSED or HUMAN_CONTROL.
+
+To enable watch mode on an excluded Feishu/Weixin execution session, an operator must first place an unexpired, exact `taskId` + `sessionId` record in `$WATCHKEEPER_HOME/state/task-grants.json` (or `$WATCHKEEPER_STATE_DIR/task-grants.json`). The record also needs `grantedBy` and `expiresAt`. See [configuration and JSON example](docs/configuration.md#http-origins-and-task-grants). The plugin cannot issue grants through HTTP or its Agent tool; removing a grant stops the active watch lease. A caller-supplied `taskId` alone no longer authorizes takeover.
+
 ## Decision cards
 
 A decision card is one JSON payload wrapped in `[DECISION_POINT]` and `[/DECISION_POINT]`, placed outside code fences. The plugin reads it, shows the question in the pending-answer view, and delivers your answer back to the session.

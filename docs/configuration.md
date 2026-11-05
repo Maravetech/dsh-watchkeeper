@@ -9,6 +9,7 @@ All configuration is environment variables, plus two optional plugin-config keys
 | `WATCHKEEPER_HOME` | `~/.dsh-watchkeeper` | Root directory for state, the session-number ledger, provider switches and the SQLite database. |
 | `WATCHKEEPER_STATE_DIR` | `$WATCHKEEPER_HOME/state` | Runtime state for the watch engine. Override it to isolate a test run. |
 | `WATCHKEEPER_ALLOWED_ORIGINS` | unset | Extra browser origins allowed to call the plugin's HTTP routes, comma-separated, exact match (for example `http://127.0.0.1:5173`). The DSH web UI's own origin is always allowed; requests without an `Origin` header (curl) are allowed. Every other browser origin gets 403. |
+| `WATCHKEEPER_ALLOWED_HOSTS` | unset | Extra trusted HTTP `Host` names, comma-separated (`host` or `host:port`). The defaults are loopback hosts (`127.0.0.0/8`, `localhost`, `::1`). Use this only for a trusted DSH deployment; adding a public or attacker-controlled name removes the DNS-rebinding protection for that name. |
 | `WATCHKEEPER_JUDGE_CMD` | unset | Judge command: an executable path or a shell command. When unset, every decision card goes to a human. |
 | `WATCHKEEPER_CODEX_BIN` | `codex` on `PATH` | Codex CLI binary used by the `codex` reply provider. |
 | `WATCHKEEPER_AGY_BIN` | `agy` on `PATH` | Antigravity CLI binary used by the `agy` reply provider. |
@@ -40,6 +41,7 @@ Two plugin-config keys work as well. They sit under the watch engine in the load
 | `$WATCHKEEPER_HOME/numbers.json` | Session-number ledger. One entry per session; numbers are never reused. |
 | `$WATCHKEEPER_HOME/providers.json` | Reply-provider switches. |
 | `$WATCHKEEPER_HOME/state/leases.json` | Per-session watch leases: rounds, token budget, expiry. |
+| `$WATCHKEEPER_HOME/state/task-grants.json` | Optional operator-maintained task grants for excluded Feishu/Weixin execution sessions. The plugin only reads this file. |
 | `$WATCHKEEPER_HOME/state/ops.json` | Decision-card transaction records. |
 | `$WATCHKEEPER_HOME/state/decisions.jsonl` | Append-only decision and delivery trail. |
 | `$WATCHKEEPER_HOME/state/locks/` | Cross-process locks for decision cards. |
@@ -49,6 +51,29 @@ Two plugin-config keys work as well. They sit under the watch engine in the load
 | `$WATCHKEEPER_HOME/probe.log` | Plugin log, one JSON object per line. |
 
 Back up this directory if you care about pending answers and the decision trail. Deleting it resets numbering.
+
+## HTTP origins and task grants
+
+The web UI uses its own HTTP origin. The desktop shell may use `Origin: dsh://host` or `Origin: dsh-app://app` while sending to a loopback HTTP server; both are accepted. A missing `Host`, `Origin: null`, a cross-site request without `Origin`, and a non-loopback `Host` are rejected. For a development UI on another local port, list its exact origin in `WATCHKEEPER_ALLOWED_ORIGINS`. Keep `WATCHKEEPER_ALLOWED_HOSTS` unset unless DSH really uses another trusted host name.
+
+For an excluded `feishu-` or `weixin-` execution session, `authorizedBy: "task"` plus `taskId` is only a lookup key. An operator must first maintain `$WATCHKEEPER_STATE_DIR/task-grants.json` (normally `$WATCHKEEPER_HOME/state/task-grants.json`):
+
+```json
+{
+  "grants": [
+    {
+      "taskId": "approved-task-id",
+      "sessionId": "feishu-execution-session-id",
+      "grantedBy": "operator-name",
+      "expiresAt": "2026-11-06T18:00:00.000Z"
+    }
+  ]
+}
+```
+
+All four fields are required. `expiresAt` should be an ISO 8601 timestamp with a timezone. A grant must match the exact task and session and must be unexpired; the resulting lease cannot outlive it. Removing or expiring the grant stops automatic judgment and delivery on the next check. Neither HTTP routes nor the `watchkeeper_task` tool can create a grant. Keep this file under the operator's control, with restrictive directory and file permissions (for example `0700` and `0600`). This file is a local trust boundary: another process with the same filesystem write access could forge a record, and `grantedBy` is an audit label, not a verified identity.
+
+The HTTP `/watchkeeper/watch/prompt` route no longer accepts `force` as a way around STOPPED, PAUSED or HUMAN_CONTROL; it returns 409. `Origin: null` is rejected. Existing callers that relied on those behaviors or on an unregistered `taskId` must update before enabling watch mode.
 
 ## Judge
 

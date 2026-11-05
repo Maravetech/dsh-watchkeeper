@@ -102,6 +102,12 @@ npx skills add Maravetech/dsh-watchkeeper --skill dsh-watchkeeper -g
 
 完整变量表、判断器契约、Provider 命令见 [docs/configuration.md](docs/configuration.md)。
 
+### HTTP 来源与任务授权
+
+HTTP 路由允许 DSH Web 界面的回环来源，以及桌面壳的 `dsh://host` / `dsh-app://app` 来源。非回环 `Host`、`Origin: null`、无 `Origin` 但标为跨站的请求会被拒绝。可信开发界面使用其他端口时，在 `WATCHKEEPER_ALLOWED_ORIGINS` 登记完整来源；只有 DSH 确实使用可信非回环主机名时才设置 `WATCHKEEPER_ALLOWED_HOSTS`。`/watchkeeper/watch/prompt` 的 `force` 不能再越过 STOPPED、PAUSED 或 HUMAN_CONTROL。
+
+对默认排除的飞书/微信执行会话开启值守前，操作者须在 `$WATCHKEEPER_HOME/state/task-grants.json`（或 `$WATCHKEEPER_STATE_DIR/task-grants.json`）登记未过期、精确匹配 `taskId` 与 `sessionId` 的授权，并填写 `grantedBy`、`expiresAt`。格式见[配置文档](docs/configuration.md#http-origins-and-task-grants)。插件的 HTTP 接口和 Agent 工具都不能签发授权；删除授权后，现有租约也会停止自动判断与投递。单独自报 `taskId` 不再构成授权。
+
 ## 决策卡
 
 决策卡是一段 JSON，用 `[DECISION_POINT]` 和 `[/DECISION_POINT]` 包起来，不能放进代码块。插件读到后把问题显示在待答视图里，你提交的答案会送回原会话。

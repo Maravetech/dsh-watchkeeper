@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased — security hardening
+
+- S1: Reject non-loopback HTTP `Host` values by default, `Origin: null`, and cross-site requests without an `Origin`. Permit the known DSH desktop schemes and allow explicit trusted hosts through `WATCHKEEPER_ALLOWED_HOSTS`. `/watchkeeper/watch/prompt` no longer lets `force` bypass the global stop or takeover gate; delivery checks the gate again.
+- H1: Fallback replies now refuse every `red-line:*` result, `judge-unavailable`, `judge-irreversible`, and context that hits the red-line classifier. The earlier free-text and multi-select fallback eligibility remains unchanged for safe contexts.
+- H2: A task ID alone no longer authorizes takeover. An unexpired, matching operator record in `task-grants.json` is required; the lease is bounded by the grant and live execution checks the record again after revocation.
+- Breaking behavior: callers relying on `force`, `Origin: null`, or unregistered task IDs must update. No live DSH deployment or runtime verification is implied by this source change.
+
 ## 0.1.2 — alpha
 
 Packaging, following the DSH bundle guide (`docs/user/develop/basic/publish.md` in deepseek-ai/deepseek-harness):
