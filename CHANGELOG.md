@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Include `human-question.schema.json` in the published package so the pending-answer feature can load after installation. A pack-list test now checks every runtime non-JavaScript resource.
+- Document control-token setup, the 403 behavior of write routes, and two proposed UI/tool control paths. Neither control path is implemented yet.
 - Accept the known DSH desktop shell origins on loopback HTTP routes, while rejecting `Origin: null` and browser cross-site requests without an Origin. The separate control token requirement remains in force.
 - Recheck the global stop gate after asynchronous session activation and immediately before either prompt delivery path. A stop raised during activation now prevents delivery and returns 409 from the HTTP prompt route.
 
