@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.2 — alpha
+
+Packaging, following the DSH bundle guide (`docs/user/develop/basic/publish.md` in deepseek-ai/deepseek-harness):
+
+- Declare `engines.dsh: ">=0.2.0-rc.1 <0.3.0"`. Verified: accepted by DSH 0.2.2-rc.1, and `dsh --dump-config` shows the `dsh-watchkeeper` layer.
+- Add the `dsh-plugin` npm keyword.
+- Each release now ships a `pnpm pack` tarball, installable with `dsh plugin add ./dsh-watchkeeper-<version>.tgz`.
+- README: tarball install, commit pinning, supported DSH versions.
+
 ## 0.1.1 — alpha
 
 Security:
