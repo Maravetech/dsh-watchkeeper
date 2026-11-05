@@ -28,7 +28,7 @@ body:
     attributes:
       label: Version
       description: Plugin version, DSH version and Node version.
-      placeholder: dsh-watchkeeper 0.1.0 / DSH 0.2.x / Node 22.5
+      placeholder: dsh-watchkeeper 0.2.0 / DSH 0.2.x / Node 22.5
     validations:
       required: true
   - type: textarea

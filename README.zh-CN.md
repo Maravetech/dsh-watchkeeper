@@ -37,7 +37,7 @@ dsh-watchkeeper 是一个替你值守会话的 DSH 插件。它做三件事：
 ### 插件
 
 ```bash
-dsh plugin --profile <你的-profile> add github:Maravetech/dsh-watchkeeper#v0.1.2
+dsh plugin --profile <你的-profile> add github:Maravetech/dsh-watchkeeper#v0.2.0
 ```
 
 要改本地克隆的代码时：
@@ -50,7 +50,7 @@ dsh plugin --profile <你的-profile> add "file:$PWD/dsh-watchkeeper"
 也可以从 [Release 页](https://github.com/Maravetech/dsh-watchkeeper/releases)下载 `dsh-watchkeeper-<版本>.tgz` 后安装：
 
 ```bash
-dsh plugin --profile <你的-profile> add ./dsh-watchkeeper-0.1.2.tgz
+dsh plugin --profile <你的-profile> add ./dsh-watchkeeper-0.2.0.tgz
 ```
 
 要固定版本，用提交号代替标签：`github:Maravetech/dsh-watchkeeper#<commit-sha>`。本包是纯 JavaScript、没有构建步骤，不需要在 `allowBuilds` 里授权。

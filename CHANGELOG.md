@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.2.0 — alpha
+
+Security fixes from an independent review of 0.1.2. Upgrade from any earlier version.
+
+Breaking:
+
+- Watch control `POST` routes now require a separate bearer token in `WATCHKEEPER_CONTROL_TOKEN`, sent as `x-watchkeeper-control-token`. Unset means those routes return 403. The DSH web UI does not call them, so the UI keeps working.
+- The request `Host` must be a literal loopback address (`127.0.0.1`, `[::1]`, `localhost`).
+
+Security:
+
+- S1: A page whose `Origin` matched a spoofed `Host` (DNS rebinding) passed the origin check, and `force: true` on `/prompt` bypassed the STOPPED stop gate. Origins are now checked against loopback, `force` is gone, and `promptSession()` checks the global gate itself.
+- H1: The fallback reply provider could answer red-line questions marked delete or publish, and questions where the judge was unavailable. Fallback now refuses every `red-line:*`, `judge-unavailable`, free-text and multi-select question.
+- H2: Any non-empty `taskId` counted as task authorization and could lift a channel session exclusion. Self-asserted task IDs are now rejected. A verifier for trusted task records is not implemented yet.
+- M4: Client reports are reduced to a field allowlist without page HTML, and new state files are written `0600` in `0700` directories. Not every existing state file is migrated to the new modes yet.
+
+Fixes:
+
+- H4: Decision-lock heartbeat renewal always failed (arguments swapped) and the error was swallowed.
+- M2: The session-number ledger lost updates when two instances wrote at once; assignment now locks and reloads.
+- M3: A corrupt lease or operation file was silently replaced by an empty state; it is now preserved and reported.
+- M5: CI actions pinned to commit SHAs, with `permissions: contents: read`.
+- L1: README and docs now match the control, fallback and shell-execution behavior.
+
+49 tests.
+
 ## 0.1.2 — alpha
 
 Packaging, following the DSH bundle guide (`docs/user/develop/basic/publish.md` in deepseek-ai/deepseek-harness):

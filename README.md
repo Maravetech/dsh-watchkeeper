@@ -37,7 +37,7 @@ Two parts: the plugin (host behavior) and the skill (agent instructions).
 ### Plugin
 
 ```bash
-dsh plugin --profile <your-profile> add github:Maravetech/dsh-watchkeeper#v0.1.2
+dsh plugin --profile <your-profile> add github:Maravetech/dsh-watchkeeper#v0.2.0
 ```
 
 To work on a local clone instead:
@@ -50,7 +50,7 @@ dsh plugin --profile <your-profile> add "file:$PWD/dsh-watchkeeper"
 Or download `dsh-watchkeeper-<version>.tgz` from the [release page](https://github.com/Maravetech/dsh-watchkeeper/releases) and add the file:
 
 ```bash
-dsh plugin --profile <your-profile> add ./dsh-watchkeeper-0.1.2.tgz
+dsh plugin --profile <your-profile> add ./dsh-watchkeeper-0.2.0.tgz
 ```
 
 For a fixed install, pin a commit instead of a tag: `github:Maravetech/dsh-watchkeeper#<commit-sha>`. The package is plain JavaScript with no build step, so no `allowBuilds` entry is needed.

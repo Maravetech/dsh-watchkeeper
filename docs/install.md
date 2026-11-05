@@ -19,7 +19,7 @@ Outside a DSH session, replace them with your real paths.
 ### Step 1. Add the plugin to the profile
 
 ```bash
-dsh plugin --profile <your-profile> add github:Maravetech/dsh-watchkeeper#v0.1.2
+dsh plugin --profile <your-profile> add github:Maravetech/dsh-watchkeeper#v0.2.0
 ```
 
 `dsh plugin` forwards the arguments to pnpm in the profile directory. It installs the package and adds `dsh-watchkeeper` to the profile's bundle list (`dsh.profile.bundles` in the profile's `package.json`). The plugin ships its own loader patch, so you do not edit `cordis.patch.yml`.
