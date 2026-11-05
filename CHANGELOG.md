@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Accept the known DSH desktop shell origins on loopback HTTP routes, while rejecting `Origin: null` and browser cross-site requests without an Origin. The separate control token requirement remains in force.
+- Recheck the global stop gate after asynchronous session activation and immediately before either prompt delivery path. A stop raised during activation now prevents delivery and returns 409 from the HTTP prompt route.
+
 ## 0.2.0 — alpha
 
 Security fixes from an independent review of 0.1.2. Upgrade from any earlier version.

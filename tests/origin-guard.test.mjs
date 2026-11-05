@@ -42,3 +42,16 @@ test('an attacker-controlled Host cannot become a trusted origin', () => {
   assert.equal(originAllowed({ headers: { host: 'evil.example:3080' } }), false)
   assert.equal(originAllowed({ headers: { origin: 'https://127.0.0.1:3080', host: '127.0.0.1:3080' } }), false)
 })
+
+test('known DSH desktop origins work only against a loopback Host', () => {
+  for (const origin of ['dsh://host', 'dsh-app://app']) {
+    assert.equal(originAllowed({ headers: { origin, host: '127.0.0.1:3080' } }), true)
+    assert.equal(originAllowed({ headers: { origin, host: 'evil.example:3080' } }), false)
+  }
+  assert.equal(originAllowed({ headers: { origin: 'dsh://evil', host: '127.0.0.1:3080' } }), false)
+})
+
+test('null and browser cross-site requests without Origin are rejected', () => {
+  assert.equal(originAllowed({ headers: { origin: 'null', host: '127.0.0.1:3080' } }), false)
+  assert.equal(originAllowed({ headers: { host: '127.0.0.1:3080', 'sec-fetch-site': 'cross-site' } }), false)
+})

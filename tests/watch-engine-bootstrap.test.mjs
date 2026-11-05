@@ -92,6 +92,68 @@ test('STOPPED cannot be bypassed by force on the prompt route', async () => {
   } finally { dispose?.(); __test.reset(); delete process.env.WATCHKEEPER_CONTROL_TOKEN }
 })
 
+test('STOPPED raised during async activation blocks the final prompt', async () => {
+  const { writeFileSync, mkdirSync } = await import('node:fs')
+  const { promptSession } = await import('../lib/watch/host.js')
+  const controlDir = process.env.WATCHKEEPER_UI_CONTROL_DIR
+  const controlFile = path.join(controlDir, 'state.json')
+  mkdirSync(controlDir, { recursive: true })
+  writeFileSync(controlFile, JSON.stringify({ state: 'IDLE' }))
+  let sends = 0
+  const ctx = {
+    get(name) {
+      if (name !== 'sessionController') return undefined
+      return {
+        async resolveAgent() { writeFileSync(controlFile, JSON.stringify({ state: 'STOPPED' })); return {} },
+        async prompt() { sends += 1; return { accepted: true } },
+      }
+    },
+  }
+  try {
+    await assert.rejects(promptSession(ctx, 'isolated-session', 'test'), { code: 'global-gate-blocked' })
+    assert.equal(sends, 0)
+  } finally {
+    writeFileSync(controlFile, JSON.stringify({ state: 'IDLE' }))
+  }
+})
+
+test('prompt HTTP route reports 409 if STOPPED is raised during activation', async () => {
+  const { writeFileSync } = await import('node:fs')
+  const { apply } = await import('../lib/watch/host.js')
+  const controlFile = path.join(process.env.WATCHKEEPER_UI_CONTROL_DIR, 'state.json')
+  writeFileSync(controlFile, JSON.stringify({ state: 'IDLE' }))
+  let sends = 0
+  const web = { routes: [], register(route) { this.routes.push(route); return () => {} } }
+  const ctx = {
+    get(name) {
+      if (name !== 'sessionController') return undefined
+      return {
+        async resolveAgent() { writeFileSync(controlFile, JSON.stringify({ state: 'STOPPED' })); return {} },
+        async prompt() { sends += 1; return { accepted: true } },
+      }
+    },
+    on() { return () => {} },
+    effect(fn) { fn(); return () => {} },
+  }
+  process.env.WATCHKEEPER_CONTROL_TOKEN = 'fixture-control-token'
+  const dispose = apply(ctx, { sweepIntervalMs: 0 }, { webServer: web })
+  const route = web.routes.find(row => row.path === '/watchkeeper/watch')
+  const req = { method: 'POST', url: '/watchkeeper/watch/prompt', headers: { host: '127.0.0.1:3080', 'x-watchkeeper-control-token': 'fixture-control-token' }, on(name, fn) { this[name] = fn; return this } }
+  const res = { statusCode: 0, setHeader() {}, end(value) { this.body = JSON.parse(value) } }
+  try {
+    const pending = route.handler(req, res)
+    req.data(JSON.stringify({ sessionId: 'isolated-session', text: 'test' }))
+    req.end()
+    await pending
+    assert.equal(res.statusCode, 409)
+    assert.equal(sends, 0)
+  } finally {
+    dispose?.()
+    delete process.env.WATCHKEEPER_CONTROL_TOKEN
+    writeFileSync(controlFile, JSON.stringify({ state: 'IDLE' }))
+  }
+})
+
 test('write routes reject requests without a configured control token', async () => {
   const { apply } = await import('../lib/watch/host.js')
   const web = { routes: [], register(route) { this.routes.push(route); return () => {} } }
