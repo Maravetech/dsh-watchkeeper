@@ -8,8 +8,9 @@ All configuration is environment variables, plus two optional plugin-config keys
 | --- | --- | --- |
 | `WATCHKEEPER_HOME` | `~/.dsh-watchkeeper` | Root directory for state, the session-number ledger, provider switches and the SQLite database. |
 | `WATCHKEEPER_STATE_DIR` | `$WATCHKEEPER_HOME/state` | Runtime state for the watch engine. Override it to isolate a test run. |
-| `WATCHKEEPER_ALLOWED_ORIGINS` | unset | Extra browser origins allowed to call the plugin's HTTP routes, comma-separated, exact match (for example `http://127.0.0.1:5173`). The DSH web UI's own origin is always allowed; requests without an `Origin` header (curl) are allowed. Every other browser origin gets 403. |
-| `WATCHKEEPER_JUDGE_CMD` | unset | Judge command: an executable path or a shell command. When unset, every decision card goes to a human. |
+| `WATCHKEEPER_ALLOWED_ORIGINS` | unset | Extra browser origins allowed to call the plugin's HTTP routes, comma-separated, exact match. The request Host must still be a literal loopback address. Requests without an Origin header are allowed only with that Host restriction. |
+| `WATCHKEEPER_CONTROL_TOKEN` | unset | Bearer token sent as `x-watchkeeper-control-token` for every `/watchkeeper/watch/*` POST. Unset disables these writes (403). Keep it outside Git and logs. |
+| `WATCHKEEPER_JUDGE_CMD` | unset | Trusted judge shell command. When unset, decision-card auto-answer is disabled. |
 | `WATCHKEEPER_CODEX_BIN` | `codex` on `PATH` | Codex CLI binary used by the `codex` reply provider. |
 | `WATCHKEEPER_AGY_BIN` | `agy` on `PATH` | Antigravity CLI binary used by the `agy` reply provider. |
 | `WATCHKEEPER_CUSTOM_CMD` | unset | Shell command used by the `custom` reply provider. Required when `custom` is enabled. |
@@ -52,11 +53,11 @@ Back up this directory if you care about pending answers and the decision trail.
 
 ## Judge
 
-A judge is any command that reads one question and returns one decision. It is the only component allowed to answer automatically. A question without options is never sent to the judge.
+A judge is any command that reads one question and returns one decision. A question without options is never sent to the judge. With `fallbackEnabled`, a reply provider may answer only selected uncertainty results from a judge that ran (`judge-unsure`, `judge-undecided`, `below-threshold`); no judge or any red line goes to a human. Auto-continue is separate from decision-card answering.
 
 ### Invocation
 
-The plugin runs the executable, writes one JSON line to stdin, and reads one JSON line from stdout.
+The plugin runs the trusted configured command through `/bin/sh -lc`, writes one JSON line to stdin, and reads one JSON line from stdout. Treat this setting as executable code; do not interpolate untrusted question text into the command string.
 
 Input:
 
@@ -97,7 +98,7 @@ Any of these hands the question to a human:
 - `confidence` is below `thresholds.approve`
 - no judge is configured
 
-This is deliberate. A broken judge must never turn into a silent automatic answer.
+This is deliberate. A broken or missing judge must never turn into a silent automatic answer. Caller-supplied `taskId` is not trusted authorization; excluded channel sessions remain excluded until a trusted task-record verifier is available.
 
 ### Example judge
 
