@@ -43,10 +43,11 @@ window.__ModuleLoader__.load({
 
     const COMPAT = {
       basePath: '/watchkeeper',
-      /** The question card renders under the assistant message. The watch switch
-       *  and reply-provider switches live in the watch panel, not in the input row. */
+      /** The question card lives under its message; the per-session watch
+       *  controls live immediately above the composer. */
       slots: [
         { name: 'conversation.chat.turnTail', id: 'watchkeeper-question-card', order: 90, component: () => TurnTail },
+        { name: 'conversation.input.dock', id: 'watchkeeper-watch-switch', order: 20, component: () => WatchBar },
       ],
       numberPollMs: 20000,
       treeRetryMs: 1500,
@@ -65,6 +66,12 @@ window.__ModuleLoader__.load({
       'duty.tipOff': 'Watch is off: click to let the judge take over this session',
       'duty.human': 'Questions are waiting for you',
       'duty.auto': 'answered by watchkeeper',
+      'duty.label': 'Watch',
+      'duty.stop': 'Emergency stop',
+      'duty.stopped': 'Stopped',
+      'duty.desktopUnverified': 'Desktop control is unavailable until its request origin is verified',
+      'duty.offline': 'Watch state unavailable',
+      'duty.failed': 'Watch control failed',
       'answers.needYou': 'Your answer is needed',
       'answers.pending': 'Pending',
       'answers.offline': 'Answer service not ready',
@@ -156,6 +163,35 @@ window.__ModuleLoader__.load({
 
     function postJson(path, body) {
       return getJson(path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body || {}) })
+    }
+
+    /** Writes never try guessed ports or pass the operator's bearer token. */
+    async function uiControlBase() {
+      try {
+        const boot = globalThis.dshDesktopBoot
+        if (boot && typeof boot.ready === 'function') {
+          const info = await boot.ready()
+          if (info?.streamBaseUrl) return normalizeBase(info.streamBaseUrl)
+        }
+      } catch { /* use the Web page's own origin */ }
+      try { if (location.protocol === 'http:' || location.protocol === 'https:') return location.origin } catch { /* ignore */ }
+      return null
+    }
+
+    async function postUiControl(action, body) {
+      const base = await uiControlBase()
+      if (!base) throw Error(TEXTS['duty.offline'])
+      const response = await fetch(`${base}/watchkeeper/watch/${action}`, {
+        method: 'POST',
+        cache: 'no-store',
+        credentials: 'same-origin',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(body || {}),
+      })
+      let data = null
+      try { data = await response.json() } catch { /* preserve HTTP status */ }
+      if (!response.ok || data?.ok !== true) throw Error(data?.message || `HTTP ${response.status}`)
+      return data
     }
 
     function report(stage, extra) {
@@ -352,22 +388,58 @@ window.__ModuleLoader__.load({
       }
     }
 
-    /** 订阅值守状态（首次调用时启动共享心跳；没有订阅者就停）。 */
-    let dutyHeartbeat = null
+    /** 订阅值守状态；定时刷新只由 start() 的共享心跳负责。 */
     function subscribeDuty(listener) {
       dutyState.listeners.add(listener)
       try { listener(dutyState.value) } catch { /* ignore */ }
-      if (dutyHeartbeat === null) {
-        void refreshDuty()
-        dutyHeartbeat = setInterval(() => { void refreshDuty() }, COMPAT.numberPollMs)
+      void refreshDuty()
+      return () => { dutyState.listeners.delete(listener) }
+    }
+
+    function WatchBar(props) {
+      const sessionId = String(props?.sessionId || '')
+      const [snapshot, setSnapshot] = React.useState(dutyState.value)
+      const [busy, setBusy] = React.useState(false)
+      const [error, setError] = React.useState('')
+      React.useEffect(() => subscribeDuty(setSnapshot), [])
+      let desktop = false
+      try { desktop = location.protocol !== 'http:' && location.protocol !== 'https:' } catch { desktop = true }
+      const blocked = snapshot?.global?.state === 'STOPPED' || snapshot?.global?.emergency?.active === true
+      const enabled = snapshot?.sessions?.[sessionId] === true
+      const available = Boolean(sessionId) && snapshot?.ok === true && !desktop
+      const zh = (() => { try { return navigator.language?.toLowerCase().startsWith('zh') } catch { return false } })()
+      const label = key => zh ? ({ 'duty.label': '值守', 'duty.on': '开', 'duty.off': '关', 'duty.stop': '急停', 'duty.stopped': '已急停', 'duty.desktopUnverified': '桌面来源尚未验证，开关暂不可用', 'duty.offline': '值守状态不可用', 'duty.failed': '值守开关失败' }[key] || TEXTS[key]) : TEXTS[key]
+
+      async function act(action, body) {
+        if (busy || !available) return
+        setBusy(true); setError('')
+        try {
+          const result = await postUiControl(action, body)
+          if (result.state?.ok) { dutyState.value = result.state; notifyDuty() }
+          else await refreshDuty()
+        } catch (failure) { setError(String(failure?.message || label('duty.failed'))) }
+        finally { setBusy(false) }
       }
-      return () => {
-        dutyState.listeners.delete(listener)
-        if (dutyHeartbeat !== null && dutyState.listeners.size === 0) {
-          clearInterval(dutyHeartbeat)
-          dutyHeartbeat = null
-        }
-      }
+
+      return h('div', {
+        'data-watchkeeper': 'watch-bar',
+        'data-watchkeeper-session': sessionId,
+        style: { display: 'flex', alignItems: 'center', gap: '8px', padding: '3px 8px', fontSize: '12px', color: TOKENS.tertiary },
+      },
+      h('button', {
+        type: 'button', role: 'switch', 'aria-checked': enabled,
+        'data-watchkeeper-switch': enabled ? 'on' : 'off',
+        disabled: busy || !available || (blocked && !enabled),
+        title: desktop ? label('duty.desktopUnverified') : (enabled ? TEXTS['duty.tipOn'] : TEXTS['duty.tipOff']),
+        onClick: () => { void act('toggle', { sessionId, enabled: !enabled }) },
+      }, `${label('duty.label')}: ${label(enabled ? 'duty.on' : 'duty.off')}`),
+      h('button', {
+        type: 'button', 'data-watchkeeper-stop': blocked ? 'stopped' : 'ready',
+        disabled: busy || !available || blocked,
+        onClick: () => { void act('stop', {}) },
+      }, blocked ? label('duty.stopped') : label('duty.stop')),
+      desktop ? h('span', null, label('duty.desktopUnverified')) : null,
+      error ? h('span', { role: 'alert' }, error) : null)
     }
 
     async function refresh() {
@@ -414,7 +486,7 @@ window.__ModuleLoader__.load({
     //
     // 一条链路：来源会话里的显式人工问题卡 → 登记（宿主半）→ 界面两处显示 → 你答 → 投回来源会话。
     // 座位：消息下方（conversation.chat.turnTail，就地答）。
-    // 输入框上方的第二个座位已于 2026-10-19 撤销（与 codex-relay 的代理名开关重复）。**只显示本会话的问题**，不把别处的问题带进来。
+    // 待答卡只在消息下方显示；输入框上方只放当前会话的值守开关。
 
     const ANSWERS = { base: '/watchkeeper/answers', pollMs: 30000 }
     let answersTokenCache = null
@@ -629,7 +701,7 @@ window.__ModuleLoader__.load({
       } catch { try { start(ctx) } catch { /* ignore */ } }
       disposers.push(() => stop())
 
-      // ② 待答座位（官方插槽）：消息下方的问题卡；输入框上方那条值守行已于 2026-10-19 撤掉
+      // ② 待答座位与当前会话的值守控制条，均用官方插槽。
       const slots = (() => { try { return ctx?.get?.('slots') ?? ctx?.slots } catch { return undefined } })()
       // 挂载幂等（契约五项铁律之一）：热重载会把上一版实例的条目留在插槽里，
       // 同 id 再注册一次就会出现「两条一样的」或「旧那条失活」。注册前先查同 id。
@@ -664,7 +736,7 @@ window.__ModuleLoader__.load({
       return () => { for (const off of disposers.reverse()) { try { off() } catch { /* ignore */ } } }
     }
 
-    exports.__internals = { COMPAT, TEXTS, translate, candidateBases, paint, scheduleRender, state, stop, TurnTail, answersApi, duty: dutyState }
+    exports.__internals = { COMPAT, TEXTS, translate, candidateBases, uiControlBase, postUiControl, paint, scheduleRender, state, stop, TurnTail, WatchBar, answersApi, duty: dutyState }
 
     return exports
   }),

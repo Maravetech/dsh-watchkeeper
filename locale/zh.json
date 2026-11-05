@@ -36,5 +36,11 @@
   "duty.tipOff": "值守关着：点一下让判断层接管这个会话的提问",
   "duty.human": "有需要你回答的问题",
   "duty.auto": "值守代答",
+  "duty.label": "值守",
+  "duty.stop": "急停",
+  "duty.stopped": "已急停",
+  "duty.desktopUnverified": "桌面来源尚未验证，开关暂不可用",
+  "duty.offline": "值守状态不可用",
+  "duty.failed": "值守开关失败",
   "providers.offline": "回复 Provider 开关：未取到状态（服务未就绪）"
 }

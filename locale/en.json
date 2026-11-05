@@ -36,5 +36,11 @@
   "duty.tipOff": "Watch is off: click to let the judge take over this session",
   "duty.human": "Questions are waiting for you",
   "duty.auto": "answered by watchkeeper",
+  "duty.label": "Watch",
+  "duty.stop": "Emergency stop",
+  "duty.stopped": "Stopped",
+  "duty.desktopUnverified": "Desktop control is unavailable until its request origin is verified",
+  "duty.offline": "Watch state unavailable",
+  "duty.failed": "Watch control failed",
   "providers.offline": "Reply provider switches: state unavailable (service not ready)"
 }
