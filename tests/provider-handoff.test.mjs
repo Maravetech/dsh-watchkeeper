@@ -23,7 +23,18 @@ process.env.WATCHKEEPER_CODEX_BIN = codexBin
 process.env.WATCHKEEPER_AGY_BIN = agyBin
 process.env.WATCHKEEPER_CUSTOM_CMD = "printf 'custom-test-reply\\n'"
 
-const { generateProviderReply, formatAutoReply } = await import('../lib/watch/host.js')
+const { canFallbackReply, generateProviderReply, formatAutoReply } = await import('../lib/watch/host.js')
+
+test('fallback never answers red lines or an unavailable judge', () => {
+  for (const [reason, context] of [
+    ['red-line:不可逆或对外发布', '删除线上文件'],
+    ['judge-unavailable', '普通问题'],
+    ['free-text', '普通问题'],
+    ['multi-select', '普通问题'],
+    ['judge-unsure', '发布商品'],
+  ]) assert.equal(canFallbackReply(reason, context), false, reason)
+  assert.equal(canFallbackReply('judge-unsure', '可逆的普通问题'), true)
+})
 
 test('single provider and a three-provider group both merge visible replies', async () => {
   const input = {
