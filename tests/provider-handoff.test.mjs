@@ -23,7 +23,13 @@ process.env.WATCHKEEPER_CODEX_BIN = codexBin
 process.env.WATCHKEEPER_AGY_BIN = agyBin
 process.env.WATCHKEEPER_CUSTOM_CMD = "printf 'custom-test-reply\\n'"
 
-const { canFallbackReply, generateProviderReply, formatAutoReply } = await import('../lib/watch/host.js')
+const { canFallbackReply, enableTakeover, generateProviderReply, formatAutoReply, isTaskAuthorized, stateSnapshot } = await import('../lib/watch/host.js')
+
+test('a caller-supplied task ID cannot authorize an excluded channel session', () => {
+  assert.equal(isTaskAuthorized({ authorizedBy: 'task', taskId: 'arbitrary' }), false)
+  assert.throws(() => enableTakeover('feishu-probe', { authorizedBy: 'task', taskId: 'arbitrary' }), /排除|excluded|通道/)
+  assert.equal(stateSnapshot().sessions['feishu-probe'], undefined)
+})
 
 test('fallback never answers red lines or an unavailable judge', () => {
   for (const [reason, context] of [
