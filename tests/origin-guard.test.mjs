@@ -36,3 +36,9 @@ test('another localhost port is rejected unless listed in WATCHKEEPER_ALLOWED_OR
 test('a malformed Origin is rejected', () => {
   assert.equal(originAllowed({ headers: { origin: 'null', host: '127.0.0.1:3080' } }), false)
 })
+
+test('an attacker-controlled Host cannot become a trusted origin', () => {
+  assert.equal(originAllowed({ headers: { origin: 'http://evil.example:3080', host: 'evil.example:3080' } }), false)
+  assert.equal(originAllowed({ headers: { host: 'evil.example:3080' } }), false)
+  assert.equal(originAllowed({ headers: { origin: 'https://127.0.0.1:3080', host: '127.0.0.1:3080' } }), false)
+})
