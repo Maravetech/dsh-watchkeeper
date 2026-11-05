@@ -1,0 +1,24 @@
+{
+  "_note": "Definitions used by the completion evaluator. Edit them to match your own definition of done; the plugin only consumes these strings.",
+  "default": {
+    "completion": "The task is fully complete and the state contains concrete, independently checkable evidence.",
+    "blocked": "The task cannot make meaningful progress without human-only information or an irreversible real-world action.",
+    "quality": {
+      "blocked": "Missing a required precondition or evidence.",
+      "partial": "Useful progress exists but required work remains.",
+      "ready": "The proposed next reply is supported by evidence and advances the task safely."
+    },
+    "evaluation": {
+      "persona": "Independent reviewer: judge only, never execute. Only evidence counts, never narration. When evidence is missing, return indeterminate; never relax a gate.",
+      "rules": [
+        "Judge the original task and the evidence, not the story of how the work was done.",
+        "Evidence layers are distinct: design / implementation / tests / runtime / platform read-back / business result. A lower layer never stands in for a higher one.",
+        "Attach evidence to every claim; when it cannot be attached, return indeterminate.",
+        "Fail closed: indeterminate means not done."
+      ],
+      "complete": "The session's original task is done at the required evidence layer, and every claim is backed by checkable evidence in the session state.",
+      "incomplete": "Required implementation, testing, runtime or platform read-back evidence still remains.",
+      "indeterminate": "The claim depends on evidence that is not present in the session state."
+    }
+  }
+}

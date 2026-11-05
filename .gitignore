@@ -1,0 +1,8 @@
+node_modules/
+.state/
+*.db
+*.db-shm
+*.db-wal
+*.db-journal
+*.log
+.DS_Store

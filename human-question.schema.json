@@ -1,0 +1,14 @@
+{
+  "contract_version": 1,
+  "required": ["question_id", "question", "type", "reason", "manual_reason", "blocking_scope", "attempts", "background", "recommendation", "state", "audience", "requires_user_response", "agent_can_resolve", "already_resolved"],
+  "types": ["卡点", "口径", "冲突", "信息缺口"],
+  "manual_reasons": ["登录", "资金", "设计机制", "必要信息"],
+  "active_state": "needs_user",
+  "placeholder_patterns": ["^请针对这条决策点填写回答[。！？]*$", "^请确认下一步决策[。！？]*$", "^针对.*填写回答或修改意见[。！？]*$", "^继续原任务[？?。]*$"],
+  "options": {
+    "min": 2,
+    "max": 4,
+    "max_chars": 120,
+    "note": "人工问题每条可带 options：2–4 个互斥短选项、推荐项放第一；界面把它渲染成可点按钮，不写就只能自己打字"
+  }
+}
