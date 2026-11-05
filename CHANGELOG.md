@@ -2,9 +2,12 @@
 
 ## Unreleased
 
+- fenn's 2026-11-05 switch decision: add a per-session Web watch switch and emergency stop above the input. Authenticated same-origin Web UI requests can turn watch off or stop it without the long-lived token; enabling additionally requires a private local `operator.json` opt-in. Scripts and all other control writes remain token-gated. Desktop UI control is disabled until its real request origin is measured. Local command-running Agents remain outside this origin-based protection.
+- An emergency stop persists STOPPED through the existing global gate, disables active leases, and has no HTTP reset route.
+- Stop accepting unmeasured `dsh://host` and `dsh-app://app` origins. This supersedes the earlier Unreleased desktop-origin allowance.
 - Include `human-question.schema.json` in the published package so the pending-answer feature can load after installation. A pack-list test now checks every runtime non-JavaScript resource.
-- Document control-token setup, the 403 behavior of write routes, and two proposed UI/tool control paths. Neither control path is implemented yet.
-- Accept the known DSH desktop shell origins on loopback HTTP routes, while rejecting `Origin: null` and browser cross-site requests without an Origin. The separate control token requirement remains in force.
+- Document control-token setup and the 403 behavior of token-only write routes. The Web switch path implements fenn's later switch decision; the earlier host-tool proposal remains unimplemented.
+- Reject `Origin: null` and browser cross-site requests without an Origin. The separate control token requirement remains in force outside the Web switch path.
 - Recheck the global stop gate after asynchronous session activation and immediately before either prompt delivery path. A stop raised during activation now prevents delivery and returns 409 from the HTTP prompt route.
 
 ## 0.2.0 — alpha

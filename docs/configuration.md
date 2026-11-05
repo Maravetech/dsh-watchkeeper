@@ -8,8 +8,8 @@ All configuration is environment variables, plus two optional plugin-config keys
 | --- | --- | --- |
 | `WATCHKEEPER_HOME` | `~/.dsh-watchkeeper` | Root directory for state, the session-number ledger, provider switches and the SQLite database. |
 | `WATCHKEEPER_STATE_DIR` | `$WATCHKEEPER_HOME/state` | Runtime state for the watch engine. Override it to isolate a test run. |
-| `WATCHKEEPER_ALLOWED_ORIGINS` | unset | Extra browser origins allowed to call the plugin's HTTP routes, comma-separated, exact match. The request Host must still be a literal loopback address. The known desktop origins `dsh://host` and `dsh-app://app` are also accepted. A request without Origin is accepted only when it is not marked `Sec-Fetch-Site: cross-site`. `Origin: null` is rejected. |
-| `WATCHKEEPER_CONTROL_TOKEN` | unset | Bearer token sent as `x-watchkeeper-control-token` for every `/watchkeeper/watch/*` POST. Unset disables these writes (403). Keep it outside Git and logs. |
+| `WATCHKEEPER_ALLOWED_ORIGINS` | unset | Extra browser origins allowed to call the plugin's HTTP routes, comma-separated, exact match. The request Host must still be a literal loopback address. This list does not authorize token-free UI writes. A request without Origin is accepted only when it is not marked `Sec-Fetch-Site: cross-site`. `Origin: null` and unmeasured desktop origins are rejected. |
+| `WATCHKEEPER_CONTROL_TOKEN` | unset | Bearer token sent as `x-watchkeeper-control-token` for script and other `/watchkeeper/watch/*` POST calls. The authenticated Web `toggle` and `stop` have a separate, narrower path. Keep the token outside Git and logs. |
 | `WATCHKEEPER_JUDGE_CMD` | unset | Trusted judge shell command. When unset, decision-card auto-answer is disabled. |
 | `WATCHKEEPER_CODEX_BIN` | `codex` on `PATH` | Codex CLI binary used by the `codex` reply provider. |
 | `WATCHKEEPER_AGY_BIN` | `agy` on `PATH` | Antigravity CLI binary used by the `agy` reply provider. |
@@ -18,9 +18,29 @@ All configuration is environment variables, plus two optional plugin-config keys
 
 Set them in the environment that launches DSH, not in a shell that only runs `curl`.
 
-### Control token setup
+### Web switch and emergency stop
 
-On a new installation, watch state reads, session numbering, and the pending-answer view work without a control token. Every `POST /watchkeeper/watch/*` route requires one: `toggle`, `provider`, `prompt`, `decide`, `beacon`, `sweep`, and `recover`. If `WATCHKEEPER_CONTROL_TOKEN` is absent, the server returns 403 even when a caller supplies a header. If it is configured, requests without the matching `x-watchkeeper-control-token` header still return 403. The token is separate from DSH Web authentication and same-origin checks; neither substitutes for it.
+On a new installation, watch state reads, session numbering, and the pending-answer view work without a control token. The DSH Web UI offers a per-session switch above the input and an emergency-stop button. An authenticated browser request may turn a session off or stop watchkeeper without the bearer token. Turning it on also requires `$WATCHKEEPER_HOME/operator.json` with `{"allowUiEnable":true}`. Missing, invalid, permissively readable, or non-owned operator files do not grant enable; the result is 409. Global STOPPED also rejects enable (409). No route writes operator.json.
+
+The token-free path requires an exact loopback Web Host/Origin pair, `Sec-Fetch-Site: same-origin`, and admission as DSH's authenticated **browser** Peer. An API Peer or an unauthenticated script with copied headers is refused. `WATCHKEEPER_ALLOWED_ORIGINS` does not expand this path. Desktop `dsh://host` headers could not be captured safely in isolation and are not admitted; its UI control stays disabled until that origin is measured and reviewed. The client checks `dshDesktopBoot.ready().streamBaseUrl` before `location.origin` for its host address, but address discovery alone grants no write authority.
+
+Emergency stop atomically writes `STOPPED` to `$WATCHKEEPER_HOME/ui-control/state.json` and disables active watch leases. The same global gate is checked before subsequent sends. There is intentionally no HTTP or UI reset route; an operator must review and clear the stop through the local control file's owner process. A session switch can still be turned off while STOPPED.
+
+On POSIX systems, create the opt-in file outside Git with private permissions:
+
+```bash
+umask 077
+mkdir -p "$HOME/.dsh-watchkeeper"
+printf '%s\n' '{"allowUiEnable":true}' > "$HOME/.dsh-watchkeeper/operator.json"
+```
+
+If `WATCHKEEPER_HOME` is customized, put `operator.json` there instead. The plugin reads the file at every enable attempt. On POSIX it must be a regular, non-symlink file owned by the DSH user with mode 0600. On Windows, use the equivalent private ACL; POSIX mode checks do not apply.
+
+This follows fenn's 2026-11-05 decision to use the on-page switch. The checks block external webpages, but cannot protect against an Agent or other local process able to run commands, edit operator.json, or control the authenticated browser. This is an explicit limit, not a claim of human-action attestation.
+
+### Control token for scripts and other writes
+
+Every other `POST /watchkeeper/watch/*` route requires the bearer token: `provider`, `prompt`, `decide`, `beacon`, `sweep`, and `recover`. Scripts and tools also require it for `toggle` and `stop`. If `WATCHKEEPER_CONTROL_TOKEN` is absent, token-only writes return 403 even when a caller supplies a header. A configured token still requires a matching `x-watchkeeper-control-token` header. Neither same-origin headers nor DSH Web authentication alone authorize these other writes.
 
 For a CLI-launched Web profile:
 
@@ -31,18 +51,7 @@ export WATCHKEEPER_CONTROL_TOKEN="$(cat "$HOME/.dsh-watchkeeper-control-token")"
 dsh web --no-open
 ```
 
-Supply the variable to the process that launches the relevant DSH profile. Keep the file outside Git, restrict its permissions, and never put the value in a URL, browser storage, logs, or a committed profile file. This enables authorized HTTP callers; the current Web UI does not provide a session watch switch that sends the token.
-
-### Proposed control paths (not implemented)
-
-These are alternatives for a future UI or DSH-tool integration. Both keep the existing rule that same-origin alone cannot authorize a write. **No option is implemented in this release; operator decision is pending.**
-
-| Option | How it would work | Trade-off |
-| --- | --- | --- |
-| A. Same-origin, session-bound capability | After DSH Web authentication, a same-origin endpoint issues a short-lived capability bound to one session and a limited set of watch actions. The UI holds it in memory and sends it on control requests; the server checks expiry, session, action, and the global gate on every write. The long-lived operator token stays on the server. | Direct UI integration, but requires a trusted authenticated issuer, replay protection, revocation, and careful treatment of cross-site requests and XSS. |
-| B. DSH-side control tool | An authenticated DSH host tool receives an explicit watch action from the user, checks the session and global gate, and calls the control logic inside the host. The browser never receives the operator token. Existing HTTP writes remain token-gated for external automation. | Smaller browser secret surface and simpler authority boundary, but requires a DSH tool/UI integration and a reliable way to distinguish an operator action from agent-generated text. |
-
-**Recommendation: B**, provided DSH can attest an explicit operator action. It avoids distributing a bearer token to page JavaScript. If DSH cannot provide that attestation, keep writes disabled from the UI while designing A's issuer and revocation rules; do not make same-origin requests sufficient by themselves.
+Supply the variable to the process that launches the relevant DSH profile. Keep the file outside Git, restrict its permissions, and never put the value in a URL, browser storage, logs, or a committed profile file. The Web switch never receives this token.
 
 Two plugin-config keys work as well. They sit under the watch engine in the loader entry:
 
@@ -71,7 +80,8 @@ Two plugin-config keys work as well. They sit under the watch engine in the load
 | `$WATCHKEEPER_HOME/state/decisions.jsonl` | Append-only decision and delivery trail. |
 | `$WATCHKEEPER_HOME/state/locks/` | Cross-process locks for decision cards. |
 | `$WATCHKEEPER_HOME/state/evidence/` | Snapshots kept for review. |
-| `$WATCHKEEPER_HOME/ui-control/` | Optional external control file (`global: STOP`, `TAKEOVER`, `AGENT_CONTROL`). |
+| `$WATCHKEEPER_HOME/ui-control/state.json` | Shared global gate; the Web emergency-stop button persists `STOPPED` here. |
+| `$WATCHKEEPER_HOME/operator.json` | Private, read-only opt-in for enabling watch from the Web switch. |
 | `$WATCHKEEPER_HOME/awaiting.db` | SQLite database for pending answers and question history. |
 | `$WATCHKEEPER_HOME/probe.log` | Plugin log, one JSON object per line. |
 

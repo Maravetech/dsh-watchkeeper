@@ -48,14 +48,14 @@ function fakeDom() {
   }
 }
 
-function loadBundle(dom = fakeDom()) {
+function loadBundle(dom = fakeDom(), options = {}) {
   let definition = null
   const window = {
     __ModuleLoader__: { load: def => { definition = def } },
     addEventListener() {}, removeEventListener() {},
   }
-  const location = { protocol: 'http:', origin: 'http://127.0.0.1:52562' }
-  const fetch = async () => ({ ok: true, json: async () => ({ ok: true, rows: [{ sessionId: 'a', n: '1' }] }) })
+  const location = options.location || { protocol: 'http:', origin: 'http://127.0.0.1:52562' }
+  const fetch = options.fetch || (async () => ({ ok: true, json: async () => ({ ok: true, rows: [{ sessionId: 'a', n: '1' }] }) }))
   const document = dom.document
   const MutationObserver = dom.MutationObserver
   globalThis.MutationObserver = MutationObserver
@@ -115,7 +115,7 @@ test('apply：注册即取证；enabled=false 或没有 effect 时也不抛，di
   offDisabled()
 })
 
-test('待答：消息下方的问题卡注册进官方插槽；输入行让给 composer-kit；不写 document.body', () => {
+test('待答卡在消息下方、值守开关在输入框上方的官方插槽', () => {
   const def = loadBundle()
   const exports = def.factory(require)
   const registered = []
@@ -126,10 +126,8 @@ test('待答：消息下方的问题卡注册进官方插槽；输入行让给 c
   const off = exports.apply({ styles: { insert() {} }, effect(fn) { fn(); return () => {} }, get: name => (name === 'slots' ? slots : undefined) }, {})
   const names = registered.map(r => r.name)
   assert.ok(names.includes('conversation.chat.turnTail'), '缺消息下方的问题卡座位')
-  // 2026-10-19（the operator：「这个插件不需要了，删除掉代码」）：输入框上方那条值守行已撤，
-  // 该插槽不再注册任何座位；与 codex-relay 的代理名开关重复的问题就此消失。
-  assert.equal(names.includes('conversation.input.dock'), false,
-    '输入框上方的值守行已删除，不许再注册 input.dock')
+  // fenn 2026-11-05 裁定：开源插件重新提供当前会话的值守开关。
+  assert.ok(registered.some(row => row.name === 'conversation.input.dock' && row.id === 'watchkeeper-watch-switch'))
   assert.equal(strippedCode().includes('function ToolRow'), false, '工具行代码已删除')
   assert.equal(strippedCode().includes('ProviderSwitches'), false, 'Provider 开关代码已删除')
   const code = strippedCode()
@@ -150,7 +148,23 @@ test('已注册的座位能真实调用组件，不能只验证注册名', () =>
     const seat = components.find(row => row.options.id === 'watchkeeper-question-card')
     assert.ok(seat)
     assert.doesNotThrow(() => seat.component({ sessionId: 'test-render-only', seq: 'test-render-only' }))
+    const watch = components.find(row => row.options.id === 'watchkeeper-watch-switch')
+    assert.ok(watch)
+    assert.doesNotThrow(() => watch.component({ sessionId: 'test-render-only' }))
   } finally { off() }
+})
+
+test('Web switch writes use the page origin and never place a control token in requests', async () => {
+  const sent = []
+  const api = loadBundle(fakeDom(), {
+    fetch: async (url, init) => { sent.push({ url, init }); return { ok: true, status: 200, json: async () => ({ ok: true }) } },
+  }).factory(require)
+  await api.__internals.postUiControl('toggle', { sessionId: 'session-fixture', enabled: false })
+  assert.equal(sent.length, 1)
+  assert.equal(sent[0].url, 'http://127.0.0.1:52562/watchkeeper/watch/toggle')
+  assert.equal(sent[0].init.credentials, 'same-origin')
+  assert.equal(sent[0].init.headers['x-watchkeeper-control-token'], undefined)
+  assert.equal(sent[0].url.includes('token'), false)
 })
 
 test('口径：文案走包内默认表，且与 locale 文件同键', () => {

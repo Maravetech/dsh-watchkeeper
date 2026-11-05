@@ -4,7 +4,7 @@
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![release](https://img.shields.io/github/v/release/Maravetech/dsh-watchkeeper?include_prereleases&sort=semver)](https://github.com/Maravetech/dsh-watchkeeper/releases)
 
-**Alpha.** Version 0.1. The plugin API and configuration may change before 1.0.
+**Alpha.** Version 0.2.0. The plugin API and configuration may change before 1.0.
 
 dsh-watchkeeper is a DSH plugin that watches sessions for you. It does three things:
 
@@ -20,7 +20,7 @@ dsh-watchkeeper is a DSH plugin that watches sessions for you. It does three thi
 
 - **No judge configured means no automatic decision-card answers.** A configured `fallbackEnabled` reply provider only handles a narrow set of uncertainty results from a judge that actually ran; red lines and unavailable judges go to a human. Optional auto-continue is a separate path.
 - Reply providers are off by default.
-- HTTP control writes require `WATCHKEEPER_CONTROL_TOKEN`; without it the write routes return 403. The web host must use a literal loopback address.
+- Authenticated DSH Web users can turn off watch or emergency-stop it without a control token. Turning it on additionally requires a private local `operator.json` opt-in. Other HTTP control writes require `WATCHKEEPER_CONTROL_TOKEN`.
 - Numbering starts at 1 and goes up. A session keeps its number across restarts.
 
 ## Requirements
@@ -99,14 +99,26 @@ Settings are environment variables. The three that matter most:
 | --- | --- | --- |
 | `WATCHKEEPER_HOME` | `~/.dsh-watchkeeper` | Where state, the session-number ledger and the SQLite database live. |
 | `WATCHKEEPER_JUDGE_CMD` | unset | Judge command. Unset means every question goes to a human. |
-| `WATCHKEEPER_CONTROL_TOKEN` | unset | Separate bearer token for watch control POST routes; unset disables those routes. |
+| `WATCHKEEPER_CONTROL_TOKEN` | unset | Separate bearer token for scripts and other watch control POST routes. The authenticated Web switch has a narrower local opt-in path. |
 | `WATCHKEEPER_CODEX_BIN` / `WATCHKEEPER_AGY_BIN` / `WATCHKEEPER_CUSTOM_CMD` | unset | Reply provider binaries. |
 
 The full list, the judge contract and the provider commands: [docs/configuration.md](docs/configuration.md).
 
 ### Control writes for a new installation
 
-Session numbering, watch state reads, and the pending-answer view do not need a control token. Every `POST /watchkeeper/watch/*` request does: this includes the session watch switch (`toggle`), reply-provider switch (`provider`), `prompt`, `decide`, `beacon`, `sweep`, and `recover`. With `WATCHKEEPER_CONTROL_TOKEN` unset, these writes return 403. A token configured only in your terminal does not reach DSH if DSH was launched elsewhere.
+Session numbering, watch state reads, and the pending-answer view do not need a control token. The authenticated DSH Web page now has a per-session switch above the input and an emergency-stop button. Turning watch off or stopping it needs no bearer token. Turning watch on additionally requires a private `$WATCHKEEPER_HOME/operator.json` containing `{"allowUiEnable":true}`; without it the server returns 409. A global STOPPED state also refuses enable (409). The stop button persists STOPPED and disables active leases; there is no UI reset route.
+
+The Web UI path requires a literal loopback Host, its exact same Origin, `Sec-Fetch-Site: same-origin`, and DSH's authenticated browser Peer. Desktop request headers have not been verified, so desktop UI control is disabled. External web pages fail the origin checks. A local Agent that can run commands can still modify the opt-in file or drive/impersonate the local browser; this switch is not a boundary against local code execution. This design follows fenn's 2026-11-05 switch decision.
+
+To opt in from a POSIX shell, create the file outside Git with private permissions:
+
+```bash
+umask 077
+mkdir -p "$HOME/.dsh-watchkeeper"
+printf '%s\n' '{"allowUiEnable":true}' > "$HOME/.dsh-watchkeeper/operator.json"
+```
+
+All other `POST /watchkeeper/watch/*` requests (`provider`, `prompt`, `decide`, `beacon`, `sweep`, `recover`) still need `WATCHKEEPER_CONTROL_TOKEN`. Scripts and tools also need it for `toggle` and `stop`; matching request headers without DSH browser authentication do not grant the UI path. With the token unset, these token-only writes return 403. A token configured only in your terminal does not reach DSH if DSH was launched elsewhere.
 
 For a CLI-launched Web profile, create a private token file and pass its value in the environment that starts DSH:
 
@@ -117,7 +129,7 @@ export WATCHKEEPER_CONTROL_TOKEN="$(cat "$HOME/.dsh-watchkeeper-control-token")"
 dsh web --no-open
 ```
 
-Keep the file outside Git and do not print the token. An authorized HTTP caller must send it in `x-watchkeeper-control-token`. The current Web UI has no session watch switch that supplies this header; setting the environment variable alone does not add one. A safe UI or DSH-tool path is a [proposal awaiting a decision](docs/configuration.md#proposed-control-paths-not-implemented).
+Keep the token file outside Git and do not print its value. Authorized script calls send it in `x-watchkeeper-control-token`; the Web page never receives it. See [configuration.md](docs/configuration.md#web-switch-and-emergency-stop).
 
 ## Decision cards
 
