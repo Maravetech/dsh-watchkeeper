@@ -18,8 +18,9 @@ dsh-watchkeeper 是一个替你值守会话的 DSH 插件。它做三件事：
 
 ## 默认行为
 
-- **不配判断器，就不自动回答。** 每张决策卡都转人工。
+- **不配判断器，就不自动回答决策卡。** 配置了 `fallbackEnabled` 的回复 Provider 也只处理已运行判断器给出的有限不确定结果；红线与判断器缺失都交人。可选的自动续跑是另一条路径。
 - 回复 Provider 默认全关。
+- HTTP 控制写接口要求 `WATCHKEEPER_CONTROL_TOKEN`；不配置时返回 403。Web Host 须使用本机回环地址字面量。
 - 编号从 1 开始递增。重启后编号不变。
 
 ## 环境要求
@@ -98,6 +99,7 @@ npx skills add Maravetech/dsh-watchkeeper --skill dsh-watchkeeper -g
 | --- | --- | --- |
 | `WATCHKEEPER_HOME` | `~/.dsh-watchkeeper` | 状态、会话编号台账、SQLite 数据库的存放目录。 |
 | `WATCHKEEPER_JUDGE_CMD` | 未设置 | 判断器命令。不设置就是全部转人工。 |
+| `WATCHKEEPER_CONTROL_TOKEN` | 未设置 | 值守控制 POST 路由的独立令牌；未设置则关闭这些写入口。 |
 | `WATCHKEEPER_CODEX_BIN` / `WATCHKEEPER_AGY_BIN` / `WATCHKEEPER_CUSTOM_CMD` | 未设置 | 回复 Provider 的可执行文件。 |
 
 完整变量表、判断器契约、Provider 命令见 [docs/configuration.md](docs/configuration.md)。

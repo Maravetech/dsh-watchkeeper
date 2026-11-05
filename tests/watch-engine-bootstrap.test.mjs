@@ -65,3 +65,39 @@ test('WebServer 延迟就绪后再挂载值守引擎，不因空注入使整块�
   assert.equal(cancelled, true, '卸载时取消尚未完成的服务等待')
   assert.equal(routes.length, 0, '卸载时撤销引擎路由')
 })
+
+test('STOPPED cannot be bypassed by force on the prompt route', async () => {
+  const { writeFileSync, mkdirSync } = await import('node:fs')
+  const { __test } = await import('../lib/watch/host.js')
+  const web = { routes: [], register(route) { this.routes.push(route); return () => {} } }
+  const ctx = { inject() {}, on() { return () => {} }, effect(fn) { fn(); return () => {} } }
+  const { apply } = await import('../lib/watch/host.js')
+  const controlDir = process.env.WATCHKEEPER_UI_CONTROL_DIR
+  mkdirSync(controlDir, { recursive: true })
+  writeFileSync(path.join(controlDir, 'state.json'), JSON.stringify({ state: 'STOPPED' }))
+  let calls = 0
+  process.env.WATCHKEEPER_CONTROL_TOKEN = 'fixture-control-token'
+  __test.setHooks({ prompt: async () => { calls += 1 } })
+  const dispose = apply(ctx, { sweepIntervalMs: 0 }, { webServer: web })
+  const route = web.routes.find(row => row.path === '/watchkeeper/watch')
+  const req = { method: 'POST', url: '/watchkeeper/watch/prompt', headers: { host: '127.0.0.1:3080', 'x-watchkeeper-control-token': 'fixture-control-token' }, on(name, fn) { this[name] = fn; return this } }
+  const res = { statusCode: 0, setHeader() {}, end(value) { this.body = JSON.parse(value) } }
+  try {
+    const pending = route.handler(req, res)
+    req.data(JSON.stringify({ sessionId: 'test-session', text: 'test', force: true }))
+    req.end()
+    await pending
+    assert.equal(res.statusCode, 409)
+    assert.equal(calls, 0)
+  } finally { dispose?.(); __test.reset(); delete process.env.WATCHKEEPER_CONTROL_TOKEN }
+})
+
+test('write routes reject requests without a configured control token', async () => {
+  const { apply } = await import('../lib/watch/host.js')
+  const web = { routes: [], register(route) { this.routes.push(route); return () => {} } }
+  const dispose = apply({ inject() {}, on() { return () => {} }, effect(fn) { fn(); return () => {} } }, { sweepIntervalMs: 0 }, { webServer: web })
+  const route = web.routes.find(row => row.path === '/watchkeeper/watch')
+  const req = { method: 'POST', url: '/watchkeeper/watch/sweep', headers: { host: '127.0.0.1:3080' }, on(name, fn) { if (name === 'end') queueMicrotask(fn); return this } }
+  const res = { statusCode: 0, setHeader() {}, end(value) { this.body = JSON.parse(value) } }
+  try { await route.handler(req, res); assert.equal(res.statusCode, 403) } finally { dispose?.() }
+})

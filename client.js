@@ -254,11 +254,7 @@ window.__ModuleLoader__.load({
       if (state.paintSignature !== signature && (state.paintReports || 0) < 4) {
         state.paintSignature = signature
         state.paintReports = (state.paintReports || 0) + 1
-        let sample = null
-        try {
-          sample = rows[0] ? String(rows[0].outerHTML || '').slice(0, 240) : null
-        } catch { sample = null }
-        report('paint-probe', { ...state.lastPaint, sample, numbers: Object.keys(state.numbers).length })
+        report('paint-probe', { ...state.lastPaint, numbers: Object.keys(state.numbers).length })
       }
     }
 

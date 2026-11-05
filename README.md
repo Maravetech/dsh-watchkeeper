@@ -18,8 +18,9 @@ dsh-watchkeeper is a DSH plugin that watches sessions for you. It does three thi
 
 ## Defaults
 
-- **No judge configured means no automatic answers.** Every decision card goes to you.
+- **No judge configured means no automatic decision-card answers.** A configured `fallbackEnabled` reply provider only handles a narrow set of uncertainty results from a judge that actually ran; red lines and unavailable judges go to a human. Optional auto-continue is a separate path.
 - Reply providers are off by default.
+- HTTP control writes require `WATCHKEEPER_CONTROL_TOKEN`; without it the write routes return 403. The web host must use a literal loopback address.
 - Numbering starts at 1 and goes up. A session keeps its number across restarts.
 
 ## Requirements
@@ -98,6 +99,7 @@ Settings are environment variables. The three that matter most:
 | --- | --- | --- |
 | `WATCHKEEPER_HOME` | `~/.dsh-watchkeeper` | Where state, the session-number ledger and the SQLite database live. |
 | `WATCHKEEPER_JUDGE_CMD` | unset | Judge command. Unset means every question goes to a human. |
+| `WATCHKEEPER_CONTROL_TOKEN` | unset | Separate bearer token for watch control POST routes; unset disables those routes. |
 | `WATCHKEEPER_CODEX_BIN` / `WATCHKEEPER_AGY_BIN` / `WATCHKEEPER_CUSTOM_CMD` | unset | Reply provider binaries. |
 
 The full list, the judge contract and the provider commands: [docs/configuration.md](docs/configuration.md).

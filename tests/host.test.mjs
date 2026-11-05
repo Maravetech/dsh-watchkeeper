@@ -3,7 +3,7 @@
 
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 
@@ -142,6 +142,19 @@ test('降级：编号台账不在场时返回空表，不编号', async () => {
   } finally {
     rmSync(home, { recursive: true, force: true })
   }
+})
+
+test('client reports omit private markup and logs are owner-only', async () => {
+  const file = path.join(TEST_RUNTIME, 'private-report.log')
+  const web = fakeWeb()
+  const dispose = await apply(fakeCtx(web), { logFile: file })
+  const handler = web.routes.find(r => r.kind === 'prefix').handler
+  try {
+    const result = await call(handler, 'POST', `${BASE_PATH}/report`, { stage: 'paint-probe', matched: 2, sample: '<div>private fixture text</div>', secret: 'private fixture text' })
+    assert.equal(result.statusCode, 200)
+    assert.doesNotMatch(readFileSync(file, 'utf8'), /private fixture text/)
+    assert.equal(statSync(file).mode & 0o777, 0o600)
+  } finally { dispose() }
 })
 
 test('回复接管开关：默认全关、可只开一个、也可都开；状态落盘', async () => {
