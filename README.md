@@ -1,5 +1,9 @@
 # dsh-watchkeeper
 
+[![test](https://github.com/Maravetech/dsh-watchkeeper/actions/workflows/test.yml/badge.svg)](https://github.com/Maravetech/dsh-watchkeeper/actions/workflows/test.yml)
+[![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![release](https://img.shields.io/github/v/release/Maravetech/dsh-watchkeeper?include_prereleases&sort=semver)](https://github.com/Maravetech/dsh-watchkeeper/releases)
+
 **Alpha.** Version 0.1. The plugin API and configuration may change before 1.0.
 
 dsh-watchkeeper is a DSH plugin that watches sessions for you. It does three things:
@@ -10,7 +14,7 @@ dsh-watchkeeper is a DSH plugin that watches sessions for you. It does three thi
 | Pending answers | Human decision cards are collected in one place. You answer once, and the answer is delivered back to the session that asked. |
 | Watch loop | A pluggable judge can answer routine mid-session questions for you. Low confidence, broken output, and red-line topics always go to a human. |
 
-> Screenshot: session list with numbers, a decision card, and the pending-answer view. Placeholder until `docs/assets/screenshot.png` is added.
+> Screenshot: session list with numbers, a decision card and the pending-answer view. Placeholder until `docs/assets/screenshot.png` is added.
 
 ## Defaults
 
@@ -24,6 +28,8 @@ dsh-watchkeeper is a DSH plugin that watches sessions for you. It does three thi
 - A DSH desktop or web app with a profile
 
 ## Install
+
+Not on npm yet (planned). Install from this repository.
 
 Two parts: the plugin (host behavior) and the skill (agent instructions).
 
@@ -57,6 +63,14 @@ ln -s "$PWD/dsh-watchkeeper/skills/dsh-watchkeeper" "$DSH_HOME/skills/dsh-watchk
 ```
 
 Full instructions, including upgrades and uninstall: [docs/install.md](docs/install.md).
+
+## Documentation
+
+| Document | Covers |
+| --- | --- |
+| [docs/install.md](docs/install.md) | Plugin and skill install, upgrade, uninstall |
+| [docs/configuration.md](docs/configuration.md) | Environment variables, the judge contract, providers |
+| [docs/decision-cards.md](docs/decision-cards.md) | Card JSON, options, common mistakes |
 
 ## Configure
 

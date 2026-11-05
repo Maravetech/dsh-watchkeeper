@@ -1,5 +1,9 @@
 # dsh-watchkeeper（值守）
 
+[![test](https://github.com/Maravetech/dsh-watchkeeper/actions/workflows/test.yml/badge.svg)](https://github.com/Maravetech/dsh-watchkeeper/actions/workflows/test.yml)
+[![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![release](https://img.shields.io/github/v/release/Maravetech/dsh-watchkeeper?include_prereleases&sort=semver)](https://github.com/Maravetech/dsh-watchkeeper/releases)
+
 **Alpha。** 版本 0.1，插件 API 与配置在 1.0 前可能变化。
 
 dsh-watchkeeper 是一个替你值守会话的 DSH 插件。它做三件事：
@@ -24,6 +28,8 @@ dsh-watchkeeper 是一个替你值守会话的 DSH 插件。它做三件事：
 - 带 profile 的 DSH 桌面端或网页端
 
 ## 安装
+
+尚未发布到 npm（计划中）。先从本仓库安装。
 
 分两部分：插件（宿主行为）和技能（Agent 指令）。
 
@@ -57,6 +63,14 @@ ln -s "$PWD/dsh-watchkeeper/skills/dsh-watchkeeper" "$DSH_HOME/skills/dsh-watchk
 ```
 
 升级与卸载的完整步骤见 [docs/install.md](docs/install.md)。
+
+## 文档
+
+| 文档 | 内容 |
+| --- | --- |
+| [docs/install.md](docs/install.md) | 插件与技能安装、升级、卸载 |
+| [docs/configuration.md](docs/configuration.md) | 环境变量、判断器契约、Provider |
+| [docs/decision-cards.md](docs/decision-cards.md) | 决策卡 JSON、选项、常见错误 |
 
 ## 配置
 
