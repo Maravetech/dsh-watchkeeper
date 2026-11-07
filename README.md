@@ -1,3 +1,5 @@
+<img src="assets/icons/working-dark.png" width="96" alt="dsh-watchkeeper icon">
+
 # dsh-watchkeeper
 
 [![test](https://github.com/Maravetech/dsh-watchkeeper/actions/workflows/test.yml/badge.svg)](https://github.com/Maravetech/dsh-watchkeeper/actions/workflows/test.yml)
@@ -184,6 +186,16 @@ npm test
 ```
 
 The test suite uses Node's built-in test runner and needs no dependencies. See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## Status icons
+
+One icon per state, each in three backgrounds (1024×1024 PNG) under [`assets/icons/`](assets/icons/).
+
+| State | Icon | Files |
+| --- | --- | --- |
+| Working | <img src="assets/icons/working-transparent.png" width="48" alt="Working"> | [transparent](assets/icons/working-transparent.png) · [white](assets/icons/working-white.png) · [dark](assets/icons/working-dark.png) |
+| Waiting | <img src="assets/icons/waiting-transparent.png" width="48" alt="Waiting"> | [transparent](assets/icons/waiting-transparent.png) · [white](assets/icons/waiting-white.png) · [dark](assets/icons/waiting-dark.png) |
+| Resting / paused | <img src="assets/icons/resting-transparent.png" width="48" alt="Resting / paused"> | [transparent](assets/icons/resting-transparent.png) · [white](assets/icons/resting-white.png) · [dark](assets/icons/resting-dark.png) |
 
 ## License
 

@@ -1,3 +1,5 @@
+<img src="assets/icons/working-dark.png" width="96" alt="dsh-watchkeeper icon">
+
 # dsh-watchkeeper（值守）
 
 [![test](https://github.com/Maravetech/dsh-watchkeeper/actions/workflows/test.yml/badge.svg)](https://github.com/Maravetech/dsh-watchkeeper/actions/workflows/test.yml)
@@ -184,6 +186,16 @@ npm test
 ```
 
 测试用 Node 自带的测试运行器，不需要装依赖。见 [CONTRIBUTING.md](CONTRIBUTING.md)。
+
+## 状态图标
+
+每种状态一张图，各有三种背景（1024×1024 PNG），放在 [`assets/icons/`](assets/icons/)。
+
+| 状态 | 图标 | 文件 |
+| --- | --- | --- |
+| 工作中 | <img src="assets/icons/working-transparent.png" width="48" alt="工作中"> | [透明](assets/icons/working-transparent.png) · [白底](assets/icons/working-white.png) · [黑底](assets/icons/working-dark.png) |
+| 等待 | <img src="assets/icons/waiting-transparent.png" width="48" alt="等待"> | [透明](assets/icons/waiting-transparent.png) · [白底](assets/icons/waiting-white.png) · [黑底](assets/icons/waiting-dark.png) |
+| 休息／暂停 | <img src="assets/icons/resting-transparent.png" width="48" alt="休息／暂停"> | [透明](assets/icons/resting-transparent.png) · [白底](assets/icons/resting-white.png) · [黑底](assets/icons/resting-dark.png) |
 
 ## 许可
 
