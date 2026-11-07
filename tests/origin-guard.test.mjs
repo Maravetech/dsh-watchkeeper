@@ -43,12 +43,20 @@ test('an attacker-controlled Host cannot become a trusted origin', () => {
   assert.equal(originAllowed({ headers: { origin: 'https://127.0.0.1:3080', host: '127.0.0.1:3080' } }), false)
 })
 
-test('known DSH desktop origins work only against a loopback Host', () => {
-  for (const origin of ['dsh://host', 'dsh-app://app']) {
-    assert.equal(originAllowed({ headers: { origin, host: '127.0.0.1:3080' } }), true)
-    assert.equal(originAllowed({ headers: { origin, host: 'evil.example:3080' } }), false)
+test('measured DSH desktop cross-site request works only against a loopback Host', () => {
+  const desktop = { origin: 'dsh-app://app', 'sec-fetch-site': 'cross-site' }
+  assert.equal(originAllowed({ headers: { ...desktop, host: '127.0.0.1:3080' } }), true)
+  assert.equal(originAllowed({ headers: { ...desktop, host: 'evil.example:3080' } }), false)
+  for (const origin of ['dsh://host', 'dsh://evil', 'dsh-app://other', 'https://evil.example',
+                        'http://127.0.0.1:3080']) {
+    assert.equal(originAllowed({ headers: { origin, host: '127.0.0.1:3080',
+                                            'sec-fetch-site': 'cross-site' } }), false, origin)
   }
-  assert.equal(originAllowed({ headers: { origin: 'dsh://evil', host: '127.0.0.1:3080' } }), false)
+  process.env.WATCHKEEPER_ALLOWED_ORIGINS = 'http://127.0.0.1:5173'
+  try {
+    assert.equal(originAllowed({ headers: { origin: 'http://127.0.0.1:5173', host: '127.0.0.1:3080',
+                                          'sec-fetch-site': 'cross-site' } }), false)
+  } finally { delete process.env.WATCHKEEPER_ALLOWED_ORIGINS }
 })
 
 test('null and browser cross-site requests without Origin are rejected', () => {

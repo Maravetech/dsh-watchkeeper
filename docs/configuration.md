@@ -8,7 +8,7 @@ All configuration is environment variables, plus two optional plugin-config keys
 | --- | --- | --- |
 | `WATCHKEEPER_HOME` | `~/.dsh-watchkeeper` | Root directory for state, the session-number ledger, provider switches and the SQLite database. |
 | `WATCHKEEPER_STATE_DIR` | `$WATCHKEEPER_HOME/state` | Runtime state for the watch engine. Override it to isolate a test run. |
-| `WATCHKEEPER_ALLOWED_ORIGINS` | unset | Extra browser origins allowed to call the plugin's HTTP routes, comma-separated, exact match. The request Host must still be a literal loopback address. The known desktop origins `dsh://host` and `dsh-app://app` are also accepted. A request without Origin is accepted only when it is not marked `Sec-Fetch-Site: cross-site`. `Origin: null` is rejected. |
+| `WATCHKEEPER_ALLOWED_ORIGINS` | unset | Extra browser origins allowed to call the plugin's HTTP routes, comma-separated, exact match. The request Host must still be a literal loopback address. The measured desktop origin `dsh-app://app` is accepted even with `Sec-Fetch-Site: cross-site`; all other cross-site requests are rejected. A request without Origin is accepted only when it is not marked `Sec-Fetch-Site: cross-site`. `Origin: null` is rejected. |
 | `WATCHKEEPER_CONTROL_TOKEN` | unset | Bearer token sent as `x-watchkeeper-control-token` for every `/watchkeeper/watch/*` POST. Unset disables these writes (403). Keep it outside Git and logs. |
 | `WATCHKEEPER_JUDGE_CMD` | unset | Trusted judge shell command. When unset, decision-card auto-answer is disabled. |
 | `WATCHKEEPER_CODEX_BIN` | `codex` on `PATH` | Codex CLI binary used by the `codex` reply provider. |
