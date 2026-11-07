@@ -47,7 +47,7 @@ test('measured DSH desktop cross-site request works only against a loopback Host
   const desktop = { origin: 'dsh-app://app', 'sec-fetch-site': 'cross-site' }
   assert.equal(originAllowed({ headers: { ...desktop, host: '127.0.0.1:3080' } }), true)
   assert.equal(originAllowed({ headers: { ...desktop, host: 'evil.example:3080' } }), false)
-  for (const origin of ['dsh://host', 'dsh://evil', 'dsh-app://other', 'https://evil.example',
+  for (const origin of ['dsh://host', 'dsh://evil', 'dsh-app://other', 'dsh-app://app/', 'https://evil.example',
                         'http://127.0.0.1:3080']) {
     assert.equal(originAllowed({ headers: { origin, host: '127.0.0.1:3080',
                                             'sec-fetch-site': 'cross-site' } }), false, origin)
