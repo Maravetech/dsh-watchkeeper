@@ -8,7 +8,7 @@ All configuration is environment variables, plus two optional plugin-config keys
 | --- | --- | --- |
 | `WATCHKEEPER_HOME` | `~/.dsh-watchkeeper` | Root directory for state, the session-number ledger, provider switches and the SQLite database. |
 | `WATCHKEEPER_STATE_DIR` | `$WATCHKEEPER_HOME/state` | Runtime state for the watch engine. Override it to isolate a test run. |
-| `WATCHKEEPER_ALLOWED_ORIGINS` | unset | Extra browser origins allowed to call the plugin's HTTP routes, comma-separated, exact match. The request Host must still be a literal loopback address. Requests without an Origin header are allowed only with that Host restriction. |
+| `WATCHKEEPER_ALLOWED_ORIGINS` | unset | Extra browser origins allowed to call the plugin's HTTP routes, comma-separated, exact match. The request Host must still be a literal loopback address. The measured desktop origin `dsh-app://app` is accepted even with `Sec-Fetch-Site: cross-site`; all other cross-site requests are rejected. A request without Origin is accepted only when it is not marked `Sec-Fetch-Site: cross-site`. `Origin: null` is rejected. |
 | `WATCHKEEPER_CONTROL_TOKEN` | unset | Bearer token sent as `x-watchkeeper-control-token` for every `/watchkeeper/watch/*` POST. Unset disables these writes (403). Keep it outside Git and logs. |
 | `WATCHKEEPER_JUDGE_CMD` | unset | Trusted judge shell command. When unset, decision-card auto-answer is disabled. |
 | `WATCHKEEPER_CODEX_BIN` | `codex` on `PATH` | Codex CLI binary used by the `codex` reply provider. |
@@ -17,6 +17,32 @@ All configuration is environment variables, plus two optional plugin-config keys
 | `WATCHKEEPER_CONSTRAINT_GATE` | `shadow` | `shadow` records only. `on` / `enforce` apply stored constraints from earlier decisions. |
 
 Set them in the environment that launches DSH, not in a shell that only runs `curl`.
+
+### Control token setup
+
+On a new installation, watch state reads, session numbering, and the pending-answer view work without a control token. Every `POST /watchkeeper/watch/*` route requires one: `toggle`, `provider`, `prompt`, `decide`, `beacon`, `sweep`, and `recover`. If `WATCHKEEPER_CONTROL_TOKEN` is absent, the server returns 403 even when a caller supplies a header. If it is configured, requests without the matching `x-watchkeeper-control-token` header still return 403. The token is separate from DSH Web authentication and same-origin checks; neither substitutes for it.
+
+For a CLI-launched Web profile:
+
+```bash
+umask 077
+openssl rand -hex 32 > "$HOME/.dsh-watchkeeper-control-token"
+export WATCHKEEPER_CONTROL_TOKEN="$(cat "$HOME/.dsh-watchkeeper-control-token")"
+dsh web --no-open
+```
+
+Supply the variable to the process that launches the relevant DSH profile. Keep the file outside Git, restrict its permissions, and never put the value in a URL, browser storage, logs, or a committed profile file. This enables authorized HTTP callers; the current Web UI does not provide a session watch switch that sends the token.
+
+### Proposed control paths (not implemented)
+
+These are alternatives for a future UI or DSH-tool integration. Both keep the existing rule that same-origin alone cannot authorize a write. **No option is implemented in this release; operator decision is pending.**
+
+| Option | How it would work | Trade-off |
+| --- | --- | --- |
+| A. Same-origin, session-bound capability | After DSH Web authentication, a same-origin endpoint issues a short-lived capability bound to one session and a limited set of watch actions. The UI holds it in memory and sends it on control requests; the server checks expiry, session, action, and the global gate on every write. The long-lived operator token stays on the server. | Direct UI integration, but requires a trusted authenticated issuer, replay protection, revocation, and careful treatment of cross-site requests and XSS. |
+| B. DSH-side control tool | An authenticated DSH host tool receives an explicit watch action from the user, checks the session and global gate, and calls the control logic inside the host. The browser never receives the operator token. Existing HTTP writes remain token-gated for external automation. | Smaller browser secret surface and simpler authority boundary, but requires a DSH tool/UI integration and a reliable way to distinguish an operator action from agent-generated text. |
+
+**Recommendation: B**, provided DSH can attest an explicit operator action. It avoids distributing a bearer token to page JavaScript. If DSH cannot provide that attestation, keep writes disabled from the UI while designing A's issuer and revocation rules; do not make same-origin requests sufficient by themselves.
 
 Two plugin-config keys work as well. They sit under the watch engine in the loader entry:
 

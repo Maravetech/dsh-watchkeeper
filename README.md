@@ -104,6 +104,21 @@ Settings are environment variables. The three that matter most:
 
 The full list, the judge contract and the provider commands: [docs/configuration.md](docs/configuration.md).
 
+### Control writes for a new installation
+
+Session numbering, watch state reads, and the pending-answer view do not need a control token. Every `POST /watchkeeper/watch/*` request does: this includes the session watch switch (`toggle`), reply-provider switch (`provider`), `prompt`, `decide`, `beacon`, `sweep`, and `recover`. With `WATCHKEEPER_CONTROL_TOKEN` unset, these writes return 403. A token configured only in your terminal does not reach DSH if DSH was launched elsewhere.
+
+For a CLI-launched Web profile, create a private token file and pass its value in the environment that starts DSH:
+
+```bash
+umask 077
+openssl rand -hex 32 > "$HOME/.dsh-watchkeeper-control-token"
+export WATCHKEEPER_CONTROL_TOKEN="$(cat "$HOME/.dsh-watchkeeper-control-token")"
+dsh web --no-open
+```
+
+Keep the file outside Git and do not print the token. An authorized HTTP caller must send it in `x-watchkeeper-control-token`. The current Web UI has no session watch switch that supplies this header; setting the environment variable alone does not add one. A safe UI or DSH-tool path is a [proposal awaiting a decision](docs/configuration.md#proposed-control-paths-not-implemented).
+
 ## Decision cards
 
 A decision card is one JSON payload wrapped in `[DECISION_POINT]` and `[/DECISION_POINT]`, placed outside code fences. The plugin reads it, shows the question in the pending-answer view, and delivers your answer back to the session.

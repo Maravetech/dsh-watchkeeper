@@ -104,6 +104,21 @@ npx skills add Maravetech/dsh-watchkeeper --skill dsh-watchkeeper -g
 
 完整变量表、判断器契约、Provider 命令见 [docs/configuration.md](docs/configuration.md)。
 
+### 新安装的控制写接口
+
+会话编号、值守状态读取和待答视图不需要控制令牌。所有 `POST /watchkeeper/watch/*` 请求都需要，包括会话值守开关（`toggle`）、回复 Provider 开关（`provider`）、`prompt`、`decide`、`beacon`、`sweep`、`recover`。不设置 `WATCHKEEPER_CONTROL_TOKEN` 时，这些写请求返回 403。只在终端里设置变量，而 DSH 从别处启动，变量不会传给 DSH。
+
+从命令行启动 Web profile 时，可建立私有令牌文件，并在启动 DSH 的环境中提供其值：
+
+```bash
+umask 077
+openssl rand -hex 32 > "$HOME/.dsh-watchkeeper-control-token"
+export WATCHKEEPER_CONTROL_TOKEN="$(cat "$HOME/.dsh-watchkeeper-control-token")"
+dsh web --no-open
+```
+
+令牌文件不要进 Git，也不要打印令牌。获授权的 HTTP 调用方须在 `x-watchkeeper-control-token` 请求头携带令牌。当前 Web 界面没有携带该请求头的会话值守开关；设置环境变量本身不会新增界面入口。安全的界面或 DSH 工具路径仍是[待裁定方案](docs/configuration.md#proposed-control-paths-not-implemented)。
+
 ## 决策卡
 
 决策卡是一段 JSON，用 `[DECISION_POINT]` 和 `[/DECISION_POINT]` 包起来，不能放进代码块。插件读到后把问题显示在待答视图里，你提交的答案会送回原会话。

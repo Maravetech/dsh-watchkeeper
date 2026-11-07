@@ -15,6 +15,7 @@
     "index.js",
     "client.js",
     "cordis.patch.yml",
+    "human-question.schema.json",
     "lib/",
     "locale/*.json",
     "icon.svg",
